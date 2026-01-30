@@ -339,7 +339,7 @@ export default function BibleReaderScreen() {
         ) : null}
       </ScrollView>
 
-      <View style={[styles.navigationBar, { backgroundColor: theme.backgroundRoot, paddingBottom: insets.bottom + Spacing.sm }]}>
+      <View style={[styles.navigationBar, { backgroundColor: theme.backgroundRoot, bottom: tabBarHeight }]}>
         <Pressable
           style={[
             styles.navButton,
