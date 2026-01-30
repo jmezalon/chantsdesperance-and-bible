@@ -24,9 +24,11 @@ import Animated, {
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { hymns, hymnSections, searchHymns, Hymn, HymnSection } from "@/data/hymns";
 import { HymnsStackParamList } from "@/navigation/HymnsStackNavigator";
+import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type NavigationProp = NativeStackNavigationProp<HymnsStackParamList>;
 
@@ -145,6 +147,17 @@ function SectionItem({ section, index, onPress }: SectionItemProps) {
 
 function EmptyState() {
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handleContributePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (user) {
+      navigation.navigate("SubmitHymn");
+    } else {
+      navigation.navigate("Auth");
+    }
+  };
 
   return (
     <Animated.View entering={FadeIn.duration(300)} style={styles.emptyState}>
@@ -160,6 +173,16 @@ function EmptyState() {
       <ThemedText style={[styles.emptyHint, { color: theme.textSecondary }]}>
         Astuce: Ajoutez "français" ou "kreyol" à votre recherche
       </ThemedText>
+      <View style={styles.contributeContainer}>
+        <ThemedText style={[styles.contributeText, { color: theme.textSecondary }]}>
+          Ce cantique manque?
+        </ThemedText>
+        <Pressable onPress={handleContributePress}>
+          <ThemedText style={[styles.contributeLink, { color: theme.accent }]}>
+            {user ? "Contribuez les paroles" : "Créez un compte pour l'ajouter"}
+          </ThemedText>
+        </Pressable>
+      </View>
     </Animated.View>
   );
 }
@@ -408,5 +431,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: Spacing.md,
     fontStyle: "italic",
+  },
+  contributeContainer: {
+    marginTop: Spacing.xl,
+    alignItems: "center",
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  contributeText: {
+    fontSize: 13,
+    textAlign: "center",
+  },
+  contributeLink: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: Spacing.xs,
+    textDecorationLine: "underline",
   },
 });
