@@ -73,19 +73,16 @@ function HymnItem({ hymn, index, onPress }: HymnItemProps) {
         <ThemedText style={styles.hymnTitle} numberOfLines={1}>
           {hymn.title}
         </ThemedText>
-        {hymn.titleKreyol ? (
-          <ThemedText
-            style={[styles.hymnSubtitle, { color: theme.textSecondary }]}
-            numberOfLines={1}
-          >
-            {hymn.titleKreyol}
-          </ThemedText>
-        ) : null}
         <ThemedText
           style={[styles.hymnSection, { color: theme.textSecondary }]}
           numberOfLines={1}
         >
           {hymn.section}
+        </ThemedText>
+      </View>
+      <View style={[styles.languageBadge, { backgroundColor: theme.backgroundSecondary }]}>
+        <ThemedText style={[styles.languageBadgeText, { color: theme.textSecondary }]}>
+          {hymn.language === "french" ? "FR" : "KR"}
         </ThemedText>
       </View>
       <Feather name="chevron-right" size={20} color={theme.textSecondary} />
@@ -129,28 +126,17 @@ function SectionItem({ section, index, onPress }: SectionItemProps) {
     >
       <View style={styles.sectionInfo}>
         <ThemedText style={styles.sectionTitle}>{section.name}</ThemedText>
-        {section.nameKreyol ? (
-          <ThemedText
-            style={[styles.sectionSubtitle, { color: theme.textSecondary }]}
-          >
-            {section.nameKreyol}
-          </ThemedText>
-        ) : null}
         <ThemedText style={[styles.sectionCount, { color: theme.accent }]}>
           {section.hymnCount} cantiques
         </ThemedText>
       </View>
-      <View style={styles.languageBadges}>
-        {section.languages.map((lang) => (
-          <View
-            key={lang}
-            style={[styles.languageBadge, { backgroundColor: theme.backgroundSecondary }]}
-          >
-            <ThemedText style={[styles.languageBadgeText, { color: theme.textSecondary }]}>
-              {lang === "french" ? "FR" : "KR"}
-            </ThemedText>
-          </View>
-        ))}
+      <View style={[
+        styles.languageBadgeLarge, 
+        { backgroundColor: section.language === "french" ? theme.accent : "#2D5A27" }
+      ]}>
+        <ThemedText style={styles.languageBadgeLargeText}>
+          {section.language === "french" ? "FR" : "KR"}
+        </ThemedText>
       </View>
       <Feather name="chevron-right" size={20} color={theme.textSecondary} />
     </AnimatedPressable>
@@ -170,6 +156,9 @@ function EmptyState() {
       <ThemedText style={styles.emptyTitle}>Aucun cantique trouvé</ThemedText>
       <ThemedText style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
         Essayez un autre numéro ou titre
+      </ThemedText>
+      <ThemedText style={[styles.emptyHint, { color: theme.textSecondary }]}>
+        Astuce: Ajoutez "français" ou "kreyol" à votre recherche
       </ThemedText>
     </Animated.View>
   );
@@ -198,7 +187,7 @@ export default function HymnsScreen() {
   const handleSectionPress = useCallback(
     (section: HymnSection) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      navigation.navigate("HymnSection", { sectionId: section.id, sectionName: section.name });
+      navigation.navigate("HymnSection", { sectionId: section.id, sectionName: section.nameFull });
     },
     [navigation]
   );
@@ -254,7 +243,7 @@ export default function HymnsScreen() {
           <Feather name="search" size={20} color={theme.textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Rechercher par numéro ou titre..."
+            placeholder="Ex: 28 français, lanmou kreyol..."
             placeholderTextColor={theme.textSecondary}
             value={searchQuery}
             onChangeText={handleSearch}
@@ -351,10 +340,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  hymnSubtitle: {
-    fontSize: 14,
-    fontStyle: "italic",
-  },
   hymnSection: {
     fontSize: 12,
   },
@@ -374,17 +359,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    fontStyle: "italic",
-  },
   sectionCount: {
     fontSize: 12,
     fontWeight: "500",
-  },
-  languageBadges: {
-    flexDirection: "row",
-    gap: Spacing.xs,
   },
   languageBadge: {
     paddingHorizontal: Spacing.sm,
@@ -394,6 +371,16 @@ const styles = StyleSheet.create({
   languageBadgeText: {
     fontSize: 10,
     fontWeight: "600",
+  },
+  languageBadgeLarge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.xs,
+  },
+  languageBadgeLargeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   emptyState: {
     alignItems: "center",
@@ -415,5 +402,11 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 14,
     textAlign: "center",
+  },
+  emptyHint: {
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: Spacing.md,
+    fontStyle: "italic",
   },
 });

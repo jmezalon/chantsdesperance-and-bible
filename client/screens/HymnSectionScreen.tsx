@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { View, FlatList, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -16,7 +16,7 @@ import Animated, {
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getHymnsBySection, Hymn } from "@/data/hymns";
+import { getHymnsBySection, getSectionById, Hymn } from "@/data/hymns";
 import { HymnsStackParamList } from "@/navigation/HymnsStackNavigator";
 
 type RouteProps = RouteProp<HymnsStackParamList, "HymnSection">;
@@ -62,39 +62,9 @@ function HymnItem({ hymn, index, onPress }: HymnItemProps) {
         <ThemedText style={styles.hymnNumberText}>{hymn.number}</ThemedText>
       </View>
       <View style={styles.hymnInfo}>
-        <ThemedText style={styles.hymnTitle} numberOfLines={1}>
+        <ThemedText style={styles.hymnTitle} numberOfLines={2}>
           {hymn.title}
         </ThemedText>
-        {hymn.titleKreyol ? (
-          <ThemedText
-            style={[styles.hymnSubtitle, { color: theme.textSecondary }]}
-            numberOfLines={1}
-          >
-            {hymn.titleKreyol}
-          </ThemedText>
-        ) : null}
-      </View>
-      <View style={styles.languageBadges}>
-        {hymn.language === "both" ? (
-          <>
-            <View style={[styles.languageBadge, { backgroundColor: theme.backgroundSecondary }]}>
-              <ThemedText style={[styles.languageBadgeText, { color: theme.textSecondary }]}>
-                FR
-              </ThemedText>
-            </View>
-            <View style={[styles.languageBadge, { backgroundColor: theme.backgroundSecondary }]}>
-              <ThemedText style={[styles.languageBadgeText, { color: theme.textSecondary }]}>
-                KR
-              </ThemedText>
-            </View>
-          </>
-        ) : (
-          <View style={[styles.languageBadge, { backgroundColor: theme.backgroundSecondary }]}>
-            <ThemedText style={[styles.languageBadgeText, { color: theme.textSecondary }]}>
-              {hymn.language === "french" ? "FR" : "KR"}
-            </ThemedText>
-          </View>
-        )}
       </View>
       <Feather name="chevron-right" size={20} color={theme.textSecondary} />
     </AnimatedPressable>
@@ -109,9 +79,10 @@ export default function HymnSectionScreen() {
   const navigation = useNavigation<NavigationProp>();
 
   const { sectionId, sectionName } = route.params;
+  const section = getSectionById(sectionId);
   const hymns = getHymnsBySection(sectionId);
 
-  React.useEffect(() => {
+  useEffect(() => {
     navigation.setOptions({
       headerTitle: sectionName,
     });
@@ -136,12 +107,33 @@ export default function HymnSectionScreen() {
     [handleHymnPress]
   );
 
+  const renderHeader = useCallback(() => {
+    if (!section) return null;
+    
+    return (
+      <View style={styles.headerContainer}>
+        <View style={[
+          styles.languageBadge, 
+          { backgroundColor: section.language === "french" ? theme.accent : "#2D5A27" }
+        ]}>
+          <ThemedText style={styles.languageBadgeText}>
+            {section.language === "french" ? "Français" : "Kreyòl"}
+          </ThemedText>
+        </View>
+        <ThemedText style={[styles.description, { color: theme.textSecondary }]}>
+          {section.description}
+        </ThemedText>
+      </View>
+    );
+  }, [section, theme]);
+
   return (
     <FlatList
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
       data={hymns}
       keyExtractor={(item) => item.id}
       renderItem={renderHymnItem}
+      ListHeaderComponent={renderHeader}
       contentContainerStyle={[
         styles.listContent,
         {
@@ -162,6 +154,25 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: Spacing.lg,
     gap: Spacing.sm,
+  },
+  headerContainer: {
+    marginBottom: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  languageBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.xs,
+  },
+  languageBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  description: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   hymnItem: {
     flexDirection: "row",
@@ -189,23 +200,6 @@ const styles = StyleSheet.create({
   },
   hymnTitle: {
     fontSize: 16,
-    fontWeight: "600",
-  },
-  hymnSubtitle: {
-    fontSize: 14,
-    fontStyle: "italic",
-  },
-  languageBadges: {
-    flexDirection: "row",
-    gap: Spacing.xs,
-  },
-  languageBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.xs,
-  },
-  languageBadgeText: {
-    fontSize: 10,
     fontWeight: "600",
   },
 });

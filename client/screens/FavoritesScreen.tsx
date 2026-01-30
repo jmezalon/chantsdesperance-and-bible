@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   FlatList,
@@ -88,9 +88,19 @@ function HymnFavoriteItem({ favorite, index, onPress, onRemove }: HymnItemProps)
         <ThemedText style={styles.itemTitle} numberOfLines={1}>
           {hymn.title}
         </ThemedText>
-        <ThemedText style={[styles.itemSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
-          {hymn.section}
-        </ThemedText>
+        <View style={styles.itemMeta}>
+          <View style={[
+            styles.languageBadge, 
+            { backgroundColor: hymn.language === "french" ? theme.accent : "#2D5A27" }
+          ]}>
+            <ThemedText style={styles.languageBadgeText}>
+              {hymn.language === "french" ? "FR" : "KR"}
+            </ThemedText>
+          </View>
+          <ThemedText style={[styles.itemSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+            {hymn.section}
+          </ThemedText>
+        </View>
       </View>
       <Pressable onPress={onRemove} hitSlop={10}>
         <Feather name="trash-2" size={18} color={theme.textSecondary} />
@@ -365,14 +375,30 @@ const styles = StyleSheet.create({
   },
   itemInfo: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   itemTitle: {
     fontSize: 16,
     fontWeight: "600",
   },
+  itemMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  languageBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  languageBadgeText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
   itemSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
+    flex: 1,
   },
   verseItem: {
     padding: Spacing.lg,
