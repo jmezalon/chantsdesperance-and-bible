@@ -149,7 +149,7 @@ export default function SettingsScreen() {
                     ? "Administrator"
                     : user.isTrusted
                     ? `Trusted Contributor (${user.approvedCount} approved)`
-                    : `Contributor (${user.approvedCount}/5 for trusted status)`
+                    : `Contributor (${user.approvedCount}/3 for trusted status)`
                 }
               />
               <SettingRow

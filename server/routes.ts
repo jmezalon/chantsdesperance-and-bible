@@ -15,7 +15,7 @@ declare module "express-session" {
   }
 }
 
-const TRUSTED_THRESHOLD = 5;
+const TRUSTED_THRESHOLD = 3;
 
 async function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.session.userId) {
