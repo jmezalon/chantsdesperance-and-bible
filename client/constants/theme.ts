@@ -1,30 +1,44 @@
 import { Platform } from "react-native";
 
-const tintColorLight = "#007AFF";
-const tintColorDark = "#0A84FF";
+// Warm sepia palette for the Hymnal and Bible app
+const primaryColor = "#8B5E3C"; // Heritage brown
+const accentColor = "#C17F3E"; // Bronze gold
+const favoriteColor = "#D4A373"; // Warm gold
 
 export const Colors = {
   light: {
-    text: "#11181C",
+    text: "#2C1810", // Deep brown - high contrast
+    textSecondary: "#6B5040", // Medium brown
     buttonText: "#FFFFFF",
-    tabIconDefault: "#687076",
-    tabIconSelected: tintColorLight,
-    link: "#007AFF",
-    backgroundRoot: "#FFFFFF", // Elevation 0
-    backgroundDefault: "#F2F2F2", // Elevation 1
-    backgroundSecondary: "#E6E6E6", // Elevation 2
-    backgroundTertiary: "#D9D9D9", // Elevation 3
+    tabIconDefault: "#6B5040",
+    tabIconSelected: primaryColor,
+    link: primaryColor,
+    accent: accentColor,
+    favorite: favoriteColor,
+    backgroundRoot: "#FFFBF5", // Cream white - aged paper
+    backgroundDefault: "#F5EFE6", // Light parchment - cards
+    backgroundSecondary: "#EDE5DA", // Slightly darker parchment
+    backgroundTertiary: "#E5DCD0", // Even darker parchment
+    border: "#E0D5C7", // Subtle beige
+    searchBackground: "#F5EFE6",
+    verseNumber: accentColor,
   },
   dark: {
-    text: "#ECEDEE",
+    text: "#F5EFE6", // Light parchment
+    textSecondary: "#C7BAA9", // Muted parchment
     buttonText: "#FFFFFF",
-    tabIconDefault: "#9BA1A6",
-    tabIconSelected: tintColorDark,
-    link: "#0A84FF",
-    backgroundRoot: "#1F2123", // Elevation 0
-    backgroundDefault: "#2A2C2E", // Elevation 1
-    backgroundSecondary: "#353739", // Elevation 2
-    backgroundTertiary: "#404244", // Elevation 3
+    tabIconDefault: "#9B8A79",
+    tabIconSelected: accentColor,
+    link: accentColor,
+    accent: accentColor,
+    favorite: favoriteColor,
+    backgroundRoot: "#1A1512", // Dark brown
+    backgroundDefault: "#252019", // Slightly lighter
+    backgroundSecondary: "#302820", // Card background
+    backgroundTertiary: "#3B3028", // Elevated cards
+    border: "#4A3F34", // Dark border
+    searchBackground: "#302820",
+    verseNumber: accentColor,
   },
 };
 
@@ -75,14 +89,25 @@ export const Typography = {
     fontWeight: "600" as const,
   },
   body: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 26,
+    fontWeight: "400" as const,
+  },
+  bodyLarge: {
+    fontSize: 19,
+    lineHeight: 30,
     fontWeight: "400" as const,
   },
   small: {
     fontSize: 14,
     lineHeight: 20,
     fontWeight: "400" as const,
+  },
+  caption: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "400" as const,
+    letterSpacing: 1,
   },
   link: {
     fontSize: 16,
@@ -93,13 +118,9 @@ export const Typography = {
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: "system-ui",
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: "ui-serif",
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: "ui-rounded",
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: "ui-monospace",
   },
   default: {
