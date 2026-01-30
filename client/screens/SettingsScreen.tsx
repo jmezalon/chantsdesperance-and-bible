@@ -6,19 +6,23 @@ import {
   StyleSheet,
   Switch,
   Linking,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { getSettings, updateSettings, AppSettings } from "@/lib/storage";
 import { bibleVersions } from "@/data/bible";
+import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 interface SettingRowProps {
   icon: keyof typeof Feather.glyphMap;
@@ -72,13 +76,32 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user, logout, isLoading: authLoading } = useAuth();
 
   const [settings, setSettings] = useState<AppSettings>({
     defaultBibleVersion: "NKJV",
     textSize: "medium",
     showKreyol: true,
   });
+
+  const handleLogout = async () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            await logout();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
     getSettings().then(setSettings);
@@ -127,6 +150,64 @@ export default function SettingsScreen() {
     >
       <Animated.View entering={FadeInDown.delay(100).duration(300)}>
         <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+          ACCOUNT
+        </ThemedText>
+        <View style={[styles.settingsGroup, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+          {user ? (
+            <>
+              <SettingRow
+                icon="user"
+                title={user.username}
+                subtitle={
+                  user.isAdmin
+                    ? "Administrator"
+                    : user.isTrusted
+                    ? `Trusted Contributor (${user.approvedCount} approved)`
+                    : `Contributor (${user.approvedCount}/5 for trusted status)`
+                }
+              />
+              <SettingRow
+                icon="plus-circle"
+                title="Submit a Hymn"
+                subtitle="Contribute missing hymn lyrics"
+                onPress={() => {
+                  navigation.navigate("SubmitHymn");
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              />
+              {user.isAdmin ? (
+                <SettingRow
+                  icon="check-square"
+                  title="Review Submissions"
+                  subtitle="Approve or reject pending hymns"
+                  onPress={() => {
+                    navigation.navigate("AdminReview");
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                />
+              ) : null}
+              <SettingRow
+                icon="log-out"
+                title="Sign Out"
+                onPress={handleLogout}
+              />
+            </>
+          ) : (
+            <SettingRow
+              icon="log-in"
+              title="Sign In"
+              subtitle="Sign in to contribute hymn lyrics"
+              onPress={() => {
+                navigation.navigate("Auth");
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+            />
+          )}
+        </View>
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.delay(150).duration(300)}>
+        <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
           APPARENCE
         </ThemedText>
         <View style={[styles.settingsGroup, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
@@ -169,7 +250,7 @@ export default function SettingsScreen() {
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(200).duration(300)}>
+      <Animated.View entering={FadeInDown.delay(250).duration(300)}>
         <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
           BIBLE
         </ThemedText>
@@ -212,7 +293,7 @@ export default function SettingsScreen() {
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(300).duration(300)}>
+      <Animated.View entering={FadeInDown.delay(350).duration(300)}>
         <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
           CANTIQUES
         </ThemedText>
@@ -233,7 +314,7 @@ export default function SettingsScreen() {
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(400).duration(300)}>
+      <Animated.View entering={FadeInDown.delay(450).duration(300)}>
         <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
           À PROPOS
         </ThemedText>
@@ -251,7 +332,7 @@ export default function SettingsScreen() {
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(500).duration(300)} style={styles.footer}>
+      <Animated.View entering={FadeInDown.delay(550).duration(300)} style={styles.footer}>
         <ThemedText style={[styles.footerText, { color: theme.textSecondary }]}>
           Chants d'Espérance & Bible
         </ThemedText>
