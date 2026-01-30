@@ -8,8 +8,8 @@ export function getApiUrl(): string {
   let host = process.env.EXPO_PUBLIC_DOMAIN;
 
   if (!host) {
-    // Default to localhost for local development
-    host = "localhost:5001";
+    // Default to production Replit backend
+    host = "hymn-scripture-hub.replit.app";
   }
 
   // Use http for localhost, https otherwise
