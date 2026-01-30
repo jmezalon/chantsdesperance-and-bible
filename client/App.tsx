@@ -12,6 +12,7 @@ import { queryClient } from "@/lib/query-client";
 import RootStackNavigator from "@/navigation/RootStackNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AppDownloadBanner } from "@/components/AppDownloadBanner";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
                   <RootStackNavigator />
                 </NavigationContainer>
                 <StatusBar style="auto" />
+                <AppDownloadBanner position="bottom" />
               </KeyboardProvider>
             </GestureHandlerRootView>
           </SafeAreaProvider>
