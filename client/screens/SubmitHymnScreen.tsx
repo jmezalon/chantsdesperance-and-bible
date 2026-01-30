@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -27,7 +26,6 @@ import { getApiUrl } from "@/lib/query-client";
 export default function SubmitHymnScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation();
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -139,7 +137,7 @@ export default function SubmitHymnScreen() {
           styles.content,
           {
             paddingTop: headerHeight + Spacing.lg,
-            paddingBottom: tabBarHeight + Spacing.xl,
+            paddingBottom: insets.bottom + Spacing.xl,
           },
         ]}
         keyboardShouldPersistTaps="handled"
