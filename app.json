@@ -8,9 +8,14 @@
     "scheme": "chantsesperance",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "owner": "jmezalon",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.chantsesperance.bible"
+      "bundleIdentifier": "com.chantsesperance.bible",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app does not use the microphone.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
