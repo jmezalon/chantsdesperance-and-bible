@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -122,6 +123,7 @@ function ChapterPicker({
 export default function BibleReaderScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
+  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
   const route = useRoute<RouteProps>();
   const navigation = useNavigation();
@@ -216,7 +218,7 @@ export default function BibleReaderScreen() {
           styles.content,
           {
             paddingTop: headerHeight + Spacing.lg,
-            paddingBottom: insets.bottom + 80,
+            paddingBottom: tabBarHeight + 140,
           },
         ]}
         showsVerticalScrollIndicator={false}
