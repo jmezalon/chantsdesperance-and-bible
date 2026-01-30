@@ -8,10 +8,13 @@ export function getApiUrl(): string {
   let host = process.env.EXPO_PUBLIC_DOMAIN;
 
   if (!host) {
-    throw new Error("EXPO_PUBLIC_DOMAIN is not set");
+    // Default to localhost for local development
+    host = "localhost:5001";
   }
 
-  let url = new URL(`https://${host}`);
+  // Use http for localhost, https otherwise
+  const protocol = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
+  let url = new URL(`${protocol}://${host}`);
 
   return url.href;
 }
