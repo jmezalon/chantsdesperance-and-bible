@@ -8,8 +8,8 @@ A React Native (Expo) mobile application serving as a digital hymnal and Bible r
 - Hymn browsing and search across 13 separate collections
 - Bible reading with multiple versions (NKJV, NIV, ESV, French translations)
 - Favorites system for saved hymns and verses
+- Community contribution system for adding missing hymn lyrics
 - Offline-first with local storage
-- No authentication required
 
 **Important: French and Kreyol are SEPARATE Collections**
 The French and Kreyol versions of hymn books (like Chants d'Espérance) are NOT translations of each other - they are completely different songs that happen to share the same numbering system. For example:
@@ -50,6 +50,14 @@ Preferred communication style: Simple, everyday language.
 **Key Routes:**
 - `GET /api/bible/:version/:book/:chapter` - Fetch chapter text
 - `GET /api/bible/search/:version?query=` - Search Bible
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/me` - Get current user session
+- `POST /api/submissions` - Submit a hymn
+- `GET /api/submissions/pending` - Get pending submissions (admin)
+- `POST /api/submissions/:id/approve` - Approve submission (admin)
+- `POST /api/submissions/:id/reject` - Reject submission (admin)
 
 ### Data Storage
 - **Local Storage**: AsyncStorage for favorites and user preferences
@@ -81,4 +89,13 @@ Preferred communication style: Simple, everyday language.
 ### Database
 - PostgreSQL via Drizzle ORM
 - Schema defined in `shared/schema.ts`
-- Currently minimal (users table only) - app relies primarily on local storage
+- Tables: users, hymnSubmissions
+- Session management via express-session with MemoryStore
+
+### Community Contribution System
+- Users can register/login to contribute missing hymn lyrics
+- Submissions go through hybrid moderation:
+  - New users: Submissions require admin approval
+  - Trusted users (5+ approved submissions): Auto-publish enabled
+- Duplicate detection checks for existing hymns before submission
+- Admin panel for reviewing, approving, or rejecting pending submissions
