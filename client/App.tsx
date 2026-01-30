@@ -26,7 +26,7 @@ export default function App() {
                   <RootStackNavigator />
                 </NavigationContainer>
                 <StatusBar style="auto" />
-                <AppDownloadBanner position="bottom" />
+                <AppDownloadBanner position="top" />
               </KeyboardProvider>
             </GestureHandlerRootView>
           </SafeAreaProvider>
