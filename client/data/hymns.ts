@@ -635,14 +635,24 @@ export function searchHymns(query: string): Hymn[] {
     const titleMatch = hymn.title.toLowerCase().includes(cleanQuery);
     const sectionMatch = hymn.section.toLowerCase().includes(cleanQuery);
     
+    // Search through lyrics (verses and chorus)
+    const lyricsMatch = hymn.verses.some((verse) =>
+      verse.text.toLowerCase().includes(cleanQuery)
+    );
+    const chorusMatch = hymn.chorus
+      ? hymn.chorus.text.toLowerCase().includes(cleanQuery)
+      : false;
+    
     // Also match on the full query if no language specified
     if (!hasFrench && !hasKreyol) {
-      return numberMatch || titleMatch || sectionMatch || 
+      return numberMatch || titleMatch || sectionMatch || lyricsMatch || chorusMatch ||
              hymn.title.toLowerCase().includes(lowerQuery) ||
-             hymn.section.toLowerCase().includes(lowerQuery);
+             hymn.section.toLowerCase().includes(lowerQuery) ||
+             hymn.verses.some((verse) => verse.text.toLowerCase().includes(lowerQuery)) ||
+             (hymn.chorus && hymn.chorus.text.toLowerCase().includes(lowerQuery));
     }
     
-    return numberMatch || titleMatch || sectionMatch;
+    return numberMatch || titleMatch || sectionMatch || lyricsMatch || chorusMatch;
   });
 }
 

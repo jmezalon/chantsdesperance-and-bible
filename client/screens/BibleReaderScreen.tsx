@@ -37,6 +37,7 @@ interface ChapterPickerProps {
   onSelect: (chapter: number) => void;
   visible: boolean;
   onClose: () => void;
+  bottomInset: number;
 }
 
 function ChapterPicker({
@@ -45,12 +46,17 @@ function ChapterPicker({
   onSelect,
   visible,
   onClose,
+  bottomInset,
 }: ChapterPickerProps) {
   const { theme } = useTheme();
 
   if (!visible) return null;
 
   const chapters = Array.from({ length: totalChapters }, (_, i) => i + 1);
+  
+  // Calculate minimum height to ensure chapters are visible above tab bar
+  // Tab bar is approximately 80px, plus extra padding for safe area
+  const minContentHeight = Math.max(200, 120 + bottomInset + 80);
 
   return (
     <Animated.View
@@ -60,7 +66,14 @@ function ChapterPicker({
       <Pressable style={styles.pickerBackdrop} onPress={onClose} />
       <Animated.View
         entering={FadeInDown.duration(300)}
-        style={[styles.pickerContent, { backgroundColor: theme.backgroundRoot }]}
+        style={[
+          styles.pickerContent, 
+          { 
+            backgroundColor: theme.backgroundRoot,
+            paddingBottom: bottomInset + 100,
+            minHeight: minContentHeight,
+          }
+        ]}
       >
         <View style={styles.pickerHeader}>
           <ThemedText style={styles.pickerTitle}>Select Chapter</ThemedText>
@@ -358,6 +371,7 @@ export default function BibleReaderScreen() {
         onSelect={handleChapterChange}
         visible={showChapterPicker}
         onClose={() => setShowChapterPicker(false)}
+        bottomInset={insets.bottom}
       />
     </View>
   );
