@@ -34,7 +34,12 @@ function setupCors(app: express.Application) {
       origin?.startsWith("http://localhost:") ||
       origin?.startsWith("http://127.0.0.1:");
 
-    if (origin && (origins.has(origin) || isLocalhost)) {
+    // Allow Vercel deployment origins
+    const isVercel =
+      origin?.endsWith(".vercel.app") ||
+      origin?.endsWith(".vercel.sh");
+
+    if (origin && (origins.has(origin) || isLocalhost || isVercel)) {
       res.header("Access-Control-Allow-Origin", origin);
       res.header(
         "Access-Control-Allow-Methods",
