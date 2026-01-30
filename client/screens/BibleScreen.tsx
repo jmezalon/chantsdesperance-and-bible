@@ -8,7 +8,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -30,6 +30,7 @@ import {
   BibleVersion,
 } from "@/data/bible";
 import { BibleStackParamList } from "@/navigation/BibleStackNavigator";
+import { getSettings } from "@/lib/storage";
 
 type NavigationProp = NativeStackNavigationProp<BibleStackParamList>;
 
@@ -134,6 +135,14 @@ export default function BibleScreen() {
 
   const [selectedVersion, setSelectedVersion] = useState("NKJV");
   const [expandedSection, setExpandedSection] = useState<"old" | "new" | null>("new");
+
+  useFocusEffect(
+    useCallback(() => {
+      getSettings().then((settings) => {
+        setSelectedVersion(settings.defaultBibleVersion);
+      });
+    }, [])
+  );
 
   const oldTestamentBooks = getOldTestamentBooks();
   const newTestamentBooks = getNewTestamentBooks();
