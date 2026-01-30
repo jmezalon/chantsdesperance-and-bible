@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Switch,
   Linking,
-  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -86,21 +85,8 @@ export default function SettingsScreen() {
   });
 
   const handleLogout = async () => {
-    Alert.alert(
-      "Sign Out",
-      "Are you sure you want to sign out?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Sign Out",
-          style: "destructive",
-          onPress: async () => {
-            await logout();
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          },
-        },
-      ]
-    );
+    await logout();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   useEffect(() => {

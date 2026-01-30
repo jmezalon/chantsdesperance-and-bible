@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -25,6 +26,7 @@ export default function AuthScreen() {
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const { login, register } = useAuth();
+  const navigation = useNavigation();
 
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState("");
@@ -34,6 +36,8 @@ export default function AuthScreen() {
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
+    if (isLoading) return;
+    
     setError("");
 
     if (!username.trim() || !password.trim()) {
@@ -59,6 +63,7 @@ export default function AuthScreen() {
         await register(username.trim(), password);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      navigation.goBack();
     } catch (err: any) {
       setError(err.message || "Something went wrong");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
