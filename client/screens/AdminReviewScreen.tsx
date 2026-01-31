@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
-  Alert,
   RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,6 +18,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
+import { showAlert } from "@/lib/alert";
 
 interface Submission {
   submission: {
@@ -60,14 +60,14 @@ export default function AdminReviewScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
     onError: (error: any) => {
-      Alert.alert("Error", error.message || "Review failed");
+      showAlert("Error", error.message || "Review failed");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
   });
 
   const handleReview = (id: string, action: "approve" | "reject") => {
     const actionLabel = action === "approve" ? "approve" : "reject";
-    Alert.alert(
+    showAlert(
       `${action === "approve" ? "Approve" : "Reject"} Submission`,
       `Are you sure you want to ${actionLabel} this hymn?`,
       [

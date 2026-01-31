@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
-  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -22,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { hymnSections } from "@/data/hymns";
 import { apiRequest, getApiUrl } from "@/lib/query-client";
+import { showAlert } from "@/lib/alert";
 
 export default function SubmitHymnScreen() {
   const insets = useSafeAreaInsets();
@@ -78,12 +78,12 @@ export default function SubmitHymnScreen() {
     if (!selectedSection) return;
 
     if (!hymnNumber.trim() || !title.trim() || !verses.trim()) {
-      Alert.alert("Missing Fields", "Please fill in hymn number, title, and at least one verse.");
+      showAlert("Missing Fields", "Please fill in hymn number, title, and at least one verse.");
       return;
     }
 
     if (existsStatus) {
-      Alert.alert(
+      showAlert(
         "Hymn Exists",
         existsStatus === "approved"
           ? "This hymn already exists in the database."
@@ -112,13 +112,13 @@ export default function SubmitHymnScreen() {
       const result = await response.json();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      Alert.alert(
+      showAlert(
         "Success!",
         result.message,
         [{ text: "OK", onPress: () => navigation.goBack() }]
       );
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to submit hymn");
+      showAlert("Error", error.message || "Failed to submit hymn");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsLoading(false);
