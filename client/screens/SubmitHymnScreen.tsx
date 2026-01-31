@@ -38,6 +38,7 @@ export default function SubmitHymnScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [existsStatus, setExistsStatus] = useState<string | null>(null);
+  const [checkError, setCheckError] = useState(false);
 
   const selectedSection = hymnSections.find((s) => s.id === sectionId);
 
@@ -45,10 +46,12 @@ export default function SubmitHymnScreen() {
     const checkExists = async () => {
       if (!hymnNumber || !selectedSection) {
         setExistsStatus(null);
+        setCheckError(false);
         return;
       }
 
       setIsChecking(true);
+      setCheckError(false);
       try {
         const url = new URL("/api/hymns/check-exists", getApiUrl());
         url.searchParams.set("sectionId", String(sectionId));
@@ -56,6 +59,11 @@ export default function SubmitHymnScreen() {
         url.searchParams.set("hymnNumber", hymnNumber);
 
         const response = await fetch(url.toString());
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
         const data = await response.json();
 
         if (data.exists) {
@@ -65,6 +73,8 @@ export default function SubmitHymnScreen() {
         }
       } catch (error) {
         console.error("Check exists error:", error);
+        setCheckError(true);
+        setExistsStatus(null);
       } finally {
         setIsChecking(false);
       }
@@ -199,6 +209,13 @@ export default function SubmitHymnScreen() {
                     {existsStatus === "approved" ? "Already exists" : "Pending review"}
                   </ThemedText>
                 </View>
+              ) : checkError ? (
+                <View style={styles.existsWarning}>
+                  <Feather name="wifi-off" size={16} color="#F59E0B" />
+                  <ThemedText style={[styles.existsText, { color: "#F59E0B" }]}>
+                    Unable to verify
+                  </ThemedText>
+                </View>
               ) : hymnNumber ? (
                 <View style={styles.availableBadge}>
                   <Feather name="check" size={16} color="#059669" />
@@ -275,10 +292,10 @@ export default function SubmitHymnScreen() {
             style={[
               styles.submitButton,
               { backgroundColor: theme.accent },
-              (isLoading || existsStatus) && { opacity: 0.5 },
+              (isLoading || existsStatus || checkError) && { opacity: 0.5 },
             ]}
             onPress={handleSubmit}
-            disabled={isLoading || !!existsStatus}
+            disabled={isLoading || !!existsStatus || checkError}
           >
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" />
