@@ -49,6 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
         maxAge: 7 * 24 * 60 * 60 * 1000,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       },
     })
   );
@@ -264,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/submissions/:id/review", requireAdmin, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { action, note } = req.body;
 
       if (!["approve", "reject"].includes(action)) {
