@@ -25,7 +25,7 @@ export function getApiUrl(): string {
   return url.href;
 }
 
-function getAuthHeaders(): Record<string, string> {
+export function getAuthHeaders(): Record<string, string> {
   if (authToken) {
     return { "Authorization": `Bearer ${authToken}` };
   }

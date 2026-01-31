@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View,
   Pressable,
@@ -15,10 +15,19 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
+import { Modal } from "@/components/Modal";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getApiUrl, apiRequest } from "@/lib/query-client";
-import { showAlert } from "@/lib/alert";
+import { apiRequest } from "@/lib/query-client";
+
+interface ModalState {
+  visible: boolean;
+  type: "success" | "error" | "warning" | "info";
+  title: string;
+  message: string;
+  confirmAction?: () => void;
+  showConfirm?: boolean;
+}
 
 interface Submission {
   submission: {
@@ -46,6 +55,16 @@ export default function AdminReviewScreen() {
   const queryClient = useQueryClient();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [modal, setModal] = useState<ModalState>({
+    visible: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
+
+  const closeModal = () => {
+    setModal((prev) => ({ ...prev, visible: false, confirmAction: undefined }));
+  };
 
   const { data: submissions, isLoading, refetch } = useQuery<Submission[]>({
     queryKey: ["/api/submissions/pending"],
@@ -53,32 +72,49 @@ export default function AdminReviewScreen() {
 
   const reviewMutation = useMutation({
     mutationFn: async ({ id, action, note }: { id: string; action: string; note?: string }) => {
-      return apiRequest("POST", `/api/submissions/${id}/review`, { action, note });
+      const response = await apiRequest("POST", `/api/submissions/${id}/review`, { action, note });
+      if (!response.ok) {
+        throw new Error("Review failed");
+      }
+      return { action };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/submissions/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["hymns"] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setModal({
+        visible: true,
+        type: "success",
+        title: data.action === "approve" ? "Hymn Approved" : "Submission Rejected",
+        message: data.action === "approve"
+          ? "The hymn has been published and is now available."
+          : "The submission has been rejected.",
+      });
     },
     onError: (error: any) => {
-      showAlert("Error", error.message || "Review failed");
+      setModal({
+        visible: true,
+        type: "error",
+        title: "Review Failed",
+        message: error.message || "Something went wrong. Please try again.",
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
   });
 
   const handleReview = (id: string, action: "approve" | "reject") => {
-    const actionLabel = action === "approve" ? "approve" : "reject";
-    showAlert(
-      `${action === "approve" ? "Approve" : "Reject"} Submission`,
-      `Are you sure you want to ${actionLabel} this hymn?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: action === "approve" ? "Approve" : "Reject",
-          style: action === "reject" ? "destructive" : "default",
-          onPress: () => reviewMutation.mutate({ id, action }),
-        },
-      ]
-    );
+    setModal({
+      visible: true,
+      type: action === "approve" ? "info" : "warning",
+      title: `${action === "approve" ? "Approve" : "Reject"} Submission?`,
+      message: action === "approve"
+        ? "This hymn will be published and available to all users."
+        : "This submission will be rejected and the submitter will be notified.",
+      showConfirm: true,
+      confirmAction: () => {
+        reviewMutation.mutate({ id, action });
+      },
+    });
   };
 
   const toggleExpand = (id: string) => {
@@ -96,6 +132,30 @@ export default function AdminReviewScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+      <Modal
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        buttons={
+          modal.showConfirm
+            ? [
+                { text: "Cancel", onPress: closeModal },
+                {
+                  text: "Confirm",
+                  primary: true,
+                  onPress: () => {
+                    closeModal();
+                    if (modal.confirmAction) {
+                      modal.confirmAction();
+                    }
+                  },
+                },
+              ]
+            : [{ text: "OK", primary: true, onPress: closeModal }]
+        }
+        onClose={closeModal}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.content,

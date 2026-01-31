@@ -18,6 +18,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePendingCount } from "@/hooks/usePendingCount";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { getSettings, updateSettings, AppSettings } from "@/lib/storage";
 import { bibleVersions } from "@/data/bible";
@@ -29,9 +30,10 @@ interface SettingRowProps {
   subtitle?: string;
   onPress?: () => void;
   rightElement?: React.ReactNode;
+  badge?: number;
 }
 
-function SettingRow({ icon, title, subtitle, onPress, rightElement }: SettingRowProps) {
+function SettingRow({ icon, title, subtitle, onPress, rightElement, badge }: SettingRowProps) {
   const { theme } = useTheme();
 
   return (
@@ -51,6 +53,13 @@ function SettingRow({ icon, title, subtitle, onPress, rightElement }: SettingRow
           </ThemedText>
         ) : null}
       </View>
+      {badge && badge > 0 ? (
+        <View style={styles.badge}>
+          <ThemedText style={styles.badgeText}>
+            {badge > 99 ? "99+" : badge}
+          </ThemedText>
+        </View>
+      ) : null}
       {rightElement ? (
         rightElement
       ) : onPress ? (
@@ -77,6 +86,7 @@ export default function SettingsScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user, logout, isLoading: authLoading } = useAuth();
+  const pendingCount = usePendingCount();
 
   const [settings, setSettings] = useState<AppSettings>({
     defaultBibleVersion: "NKJV",
@@ -166,6 +176,7 @@ export default function SettingsScreen() {
                   icon="check-square"
                   title="Review Submissions"
                   subtitle="Approve or reject pending hymns"
+                  badge={pendingCount}
                   onPress={() => {
                     navigation.navigate("AdminReview");
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -433,5 +444,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: Spacing.xs,
     fontStyle: "italic",
+  },
+  badge: {
+    backgroundColor: "#EF4444",
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+    marginRight: Spacing.sm,
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

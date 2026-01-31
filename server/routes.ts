@@ -340,9 +340,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get hymns by section (approved only)
+  app.get("/api/hymns/section/:sectionId", async (req, res) => {
+    const { sectionId } = req.params;
+
+    try {
+      const hymns = await db.select()
+        .from(hymnSubmissions)
+        .where(and(
+          eq(hymnSubmissions.sectionId, Number(sectionId)),
+          eq(hymnSubmissions.status, "approved")
+        ))
+        .orderBy(hymnSubmissions.hymnNumber);
+
+      // Transform to match client Hymn interface
+      const transformedHymns = hymns.map(h => ({
+        id: h.id,
+        number: h.hymnNumber,
+        title: h.title,
+        section: h.sectionName,
+        sectionId: h.sectionId,
+        language: h.language as "french" | "kreyol",
+        verses: h.verses,
+        chorus: h.chorus,
+      }));
+
+      res.json(transformedHymns);
+    } catch (error) {
+      console.error("Error fetching hymns by section:", error);
+      res.status(500).json({ error: "Failed to fetch hymns" });
+    }
+  });
+
+  // Check if hymn exists - MUST be before /:id route
   app.get("/api/hymns/check-exists", async (req, res) => {
     const { sectionId, language, hymnNumber } = req.query;
-    
+
     if (!sectionId || !language || !hymnNumber) {
       res.status(400).json({ error: "Missing parameters" });
       return;
@@ -356,14 +389,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
           eq(hymnSubmissions.hymnNumber, Number(hymnNumber))
         ))
         .limit(1);
-      
-      res.json({ 
+
+      res.json({
         exists: existing.length > 0,
         status: existing[0]?.status || null
       });
     } catch (error) {
       console.error("Check exists error:", error);
       res.status(500).json({ error: "Check failed" });
+    }
+  });
+
+  // Search hymns - MUST be before /:id route
+  app.get("/api/hymns/search", async (req, res) => {
+    const { q, language } = req.query;
+
+    if (!q || typeof q !== "string") {
+      res.status(400).json({ error: "Search query is required" });
+      return;
+    }
+
+    try {
+      const searchTerm = q.toLowerCase().trim();
+
+      // Get all approved hymns
+      let hymns = await db.select()
+        .from(hymnSubmissions)
+        .where(eq(hymnSubmissions.status, "approved"))
+        .orderBy(hymnSubmissions.hymnNumber);
+
+      // Filter by language if specified
+      if (language && (language === "french" || language === "kreyol")) {
+        hymns = hymns.filter(h => h.language === language);
+      }
+
+      // Search through hymns
+      const results = hymns.filter(hymn => {
+        const numberMatch = hymn.hymnNumber.toString().includes(searchTerm);
+        const titleMatch = hymn.title.toLowerCase().includes(searchTerm);
+        const sectionMatch = hymn.sectionName.toLowerCase().includes(searchTerm);
+        const versesMatch = hymn.verses.toLowerCase().includes(searchTerm);
+        const chorusMatch = hymn.chorus ? hymn.chorus.toLowerCase().includes(searchTerm) : false;
+
+        return numberMatch || titleMatch || sectionMatch || versesMatch || chorusMatch;
+      });
+
+      // Transform to match client Hymn interface
+      const transformedHymns = results.map(h => ({
+        id: h.id,
+        number: h.hymnNumber,
+        title: h.title,
+        section: h.sectionName,
+        sectionId: h.sectionId,
+        language: h.language as "french" | "kreyol",
+        verses: h.verses,
+        chorus: h.chorus,
+      }));
+
+      res.json(transformedHymns);
+    } catch (error) {
+      console.error("Search error:", error);
+      res.status(500).json({ error: "Search failed" });
+    }
+  });
+
+  // Get single hymn by ID - MUST be after more specific routes
+  app.get("/api/hymns/:id", async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const [hymn] = await db.select()
+        .from(hymnSubmissions)
+        .where(and(
+          eq(hymnSubmissions.id, id),
+          eq(hymnSubmissions.status, "approved")
+        ))
+        .limit(1);
+
+      if (!hymn) {
+        res.status(404).json({ error: "Hymn not found" });
+        return;
+      }
+
+      // Transform to match client Hymn interface
+      const transformedHymn = {
+        id: hymn.id,
+        number: hymn.hymnNumber,
+        title: hymn.title,
+        section: hymn.sectionName,
+        sectionId: hymn.sectionId,
+        language: hymn.language as "french" | "kreyol",
+        verses: hymn.verses,
+        chorus: hymn.chorus,
+      };
+
+      res.json(transformedHymn);
+    } catch (error) {
+      console.error("Error fetching hymn:", error);
+      res.status(500).json({ error: "Failed to fetch hymn" });
     }
   });
   // Bible API proxy to Bolls.life

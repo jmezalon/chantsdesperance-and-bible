@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   FlatList,
@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -21,14 +22,27 @@ import Animated, {
   FadeIn,
   FadeInDown,
 } from "react-native-reanimated";
+import { useQuery } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { hymns, hymnSections, searchHymns, Hymn, HymnSection } from "@/data/hymns";
+import { hymnSections, HymnSection } from "@/data/hymns";
 import { HymnsStackParamList } from "@/navigation/HymnsStackNavigator";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { getApiUrl } from "@/lib/query-client";
+
+interface Hymn {
+  id: string;
+  number: number;
+  title: string;
+  section: string;
+  sectionId: number;
+  language: "french" | "kreyol";
+  verses: string;
+  chorus: string | null;
+}
 
 type NavigationProp = NativeStackNavigationProp<HymnsStackParamList>;
 
@@ -195,9 +209,53 @@ export default function HymnsScreen() {
   const navigation = useNavigation<NavigationProp>();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showSections, setShowSections] = useState(true);
 
-  const filteredHymns = searchQuery.trim() ? searchHymns(searchQuery) : hymns;
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Parse search query for language filter
+  const parseSearchQuery = (query: string) => {
+    const lowerQuery = query.toLowerCase().trim();
+    let language: string | undefined;
+    let cleanQuery = lowerQuery;
+
+    if (lowerQuery.includes("français") || lowerQuery.includes("francais") || lowerQuery.includes(" fr")) {
+      language = "french";
+      cleanQuery = lowerQuery.replace(/français|francais| fr/gi, "").trim();
+    } else if (lowerQuery.includes("kreyol") || lowerQuery.includes("kreyòl") || lowerQuery.includes(" kr")) {
+      language = "kreyol";
+      cleanQuery = lowerQuery.replace(/kreyol|kreyòl| kr/gi, "").trim();
+    }
+
+    return { cleanQuery, language };
+  };
+
+  const { cleanQuery, language } = parseSearchQuery(debouncedQuery);
+
+  // Fetch search results from API
+  const { data: searchResults = [], isLoading: isSearching } = useQuery<Hymn[]>({
+    queryKey: ["hymns", "search", cleanQuery, language],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set("q", cleanQuery);
+      if (language) params.set("language", language);
+
+      const response = await fetch(`${getApiUrl()}api/hymns/search?${params.toString()}`);
+      if (!response.ok) throw new Error("Search failed");
+      return response.json();
+    },
+    enabled: cleanQuery.length > 0,
+    staleTime: 30 * 1000,
+  });
+
+  const filteredHymns = cleanQuery ? searchResults : [];
 
   const handleHymnPress = useCallback(
     (hymn: Hymn) => {
@@ -292,6 +350,10 @@ export default function HymnsScreen() {
           scrollIndicatorInsets={{ bottom: insets.bottom }}
           showsVerticalScrollIndicator={false}
         />
+      ) : isSearching ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.accent} />
+        </View>
       ) : (
         <FlatList
           data={filteredHymns}
@@ -448,5 +510,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: Spacing.xs,
     textDecorationLine: "underline",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: Spacing["5xl"],
   },
 });

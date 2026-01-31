@@ -16,12 +16,20 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { Picker } from "@react-native-picker/picker";
 
 import { ThemedText } from "@/components/ThemedText";
+import { Modal } from "@/components/Modal";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { hymnSections } from "@/data/hymns";
 import { apiRequest, getApiUrl } from "@/lib/query-client";
-import { showAlert } from "@/lib/alert";
+
+interface ModalState {
+  visible: boolean;
+  type: "success" | "error" | "warning" | "info";
+  title: string;
+  message: string;
+  onClose?: () => void;
+}
 
 export default function SubmitHymnScreen() {
   const insets = useSafeAreaInsets();
@@ -39,8 +47,22 @@ export default function SubmitHymnScreen() {
   const [isChecking, setIsChecking] = useState(false);
   const [existsStatus, setExistsStatus] = useState<string | null>(null);
   const [checkError, setCheckError] = useState(false);
+  const [modal, setModal] = useState<ModalState>({
+    visible: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
 
   const selectedSection = hymnSections.find((s) => s.id === sectionId);
+
+  const closeModal = () => {
+    const onCloseCallback = modal.onClose;
+    setModal((prev) => ({ ...prev, visible: false }));
+    if (onCloseCallback) {
+      onCloseCallback();
+    }
+  };
 
   useEffect(() => {
     const checkExists = async () => {
@@ -88,17 +110,24 @@ export default function SubmitHymnScreen() {
     if (!selectedSection) return;
 
     if (!hymnNumber.trim() || !title.trim() || !verses.trim()) {
-      showAlert("Missing Fields", "Please fill in hymn number, title, and at least one verse.");
+      setModal({
+        visible: true,
+        type: "warning",
+        title: "Missing Fields",
+        message: "Please fill in hymn number, title, and at least one verse.",
+      });
       return;
     }
 
     if (existsStatus) {
-      showAlert(
-        "Hymn Exists",
-        existsStatus === "approved"
+      setModal({
+        visible: true,
+        type: "warning",
+        title: "Hymn Exists",
+        message: existsStatus === "approved"
           ? "This hymn already exists in the database."
-          : "This hymn is already pending review."
-      );
+          : "This hymn is already pending review.",
+      });
       return;
     }
 
@@ -122,13 +151,23 @@ export default function SubmitHymnScreen() {
       const result = await response.json();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      showAlert(
-        "Success!",
-        result.message,
-        [{ text: "OK", onPress: () => navigation.goBack() }]
-      );
+      const isAutoApproved = result.autoApproved;
+      setModal({
+        visible: true,
+        type: "success",
+        title: isAutoApproved ? "Hymn Published!" : "Submission Received",
+        message: isAutoApproved
+          ? "Your hymn has been automatically published. Thank you for your contribution!"
+          : "Your submission is pending review by an admin. You'll be notified once it's approved.",
+        onClose: () => navigation.goBack(),
+      });
     } catch (error: any) {
-      showAlert("Error", error.message || "Failed to submit hymn");
+      setModal({
+        visible: true,
+        type: "error",
+        title: "Submission Failed",
+        message: error.message || "Failed to submit hymn. Please try again.",
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsLoading(false);
@@ -137,6 +176,13 @@ export default function SubmitHymnScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+      <Modal
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={closeModal}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -149,13 +195,20 @@ export default function SubmitHymnScreen() {
       >
         <Animated.View entering={FadeInDown.delay(100).duration(300)}>
           {user?.isTrusted ? (
-            <View style={[styles.trustedBadge, { backgroundColor: "#D1FAE5" }]}>
+            <View style={[styles.statusBadge, { backgroundColor: "#D1FAE5" }]}>
               <Feather name="check-circle" size={16} color="#059669" />
-              <ThemedText style={styles.trustedText}>
+              <ThemedText style={[styles.statusText, { color: "#059669" }]}>
                 Trusted Contributor - Your submissions are auto-approved
               </ThemedText>
             </View>
-          ) : null}
+          ) : (
+            <View style={[styles.statusBadge, { backgroundColor: "#FEF3C7" }]}>
+              <Feather name="clock" size={16} color="#D97706" />
+              <ThemedText style={[styles.statusText, { color: "#92400E" }]}>
+                New Contributor - Submissions require admin approval
+              </ThemedText>
+            </View>
+          )}
 
           <View style={styles.inputGroup}>
             <ThemedText style={styles.label}>Hymn Book</ThemedText>
@@ -167,7 +220,7 @@ export default function SubmitHymnScreen() {
             >
               <Picker
                 selectedValue={sectionId}
-                onValueChange={setSectionId}
+                onValueChange={(value) => setSectionId(Number(value))}
                 style={{ color: theme.text }}
               >
                 {hymnSections.map((section) => (
@@ -319,7 +372,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Spacing.lg,
   },
-  trustedBadge: {
+  statusBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
@@ -327,10 +380,10 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     marginBottom: Spacing.lg,
   },
-  trustedText: {
-    color: "#059669",
+  statusText: {
     fontSize: 13,
     fontWeight: "600",
+    flex: 1,
   },
   inputGroup: {
     marginBottom: Spacing.lg,

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import { View, FlatList, Pressable, StyleSheet } from "react-native";
+import { View, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
@@ -12,12 +12,25 @@ import Animated, {
   withSpring,
   FadeInDown,
 } from "react-native-reanimated";
+import { useQuery } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getHymnsBySection, getSectionById, Hymn } from "@/data/hymns";
+import { getSectionById } from "@/data/hymns";
 import { HymnsStackParamList } from "@/navigation/HymnsStackNavigator";
+import { getApiUrl } from "@/lib/query-client";
+
+interface Hymn {
+  id: string;
+  number: number;
+  title: string;
+  section: string;
+  sectionId: number;
+  language: "french" | "kreyol";
+  verses: string;
+  chorus: string | null;
+}
 
 type RouteProps = RouteProp<HymnsStackParamList, "HymnSection">;
 type NavigationProp = NativeStackNavigationProp<HymnsStackParamList>;
@@ -80,7 +93,19 @@ export default function HymnSectionScreen() {
 
   const { sectionId, sectionName } = route.params;
   const section = getSectionById(sectionId);
-  const hymns = getHymnsBySection(sectionId);
+
+  // Fetch hymns from API
+  const { data: hymns = [], isLoading, error } = useQuery<Hymn[]>({
+    queryKey: ["hymns", "section", sectionId],
+    queryFn: async () => {
+      const response = await fetch(`${getApiUrl()}api/hymns/section/${sectionId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch hymns");
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   useEffect(() => {
     navigation.setOptions({
@@ -127,6 +152,26 @@ export default function HymnSectionScreen() {
     );
   }, [section, theme]);
 
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centered, { backgroundColor: theme.backgroundRoot }]}>
+        <ActivityIndicator size="large" color={theme.accent} />
+        <ThemedText style={{ marginTop: Spacing.md }}>Loading hymns...</ThemedText>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centered, { backgroundColor: theme.backgroundRoot }]}>
+        <Feather name="alert-circle" size={48} color={theme.textSecondary} />
+        <ThemedText style={{ marginTop: Spacing.md, color: theme.textSecondary }}>
+          Failed to load hymns
+        </ThemedText>
+      </View>
+    );
+  }
+
   return (
     <FlatList
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
@@ -134,6 +179,13 @@ export default function HymnSectionScreen() {
       keyExtractor={(item) => item.id}
       renderItem={renderHymnItem}
       ListHeaderComponent={renderHeader}
+      ListEmptyComponent={
+        <View style={styles.emptyContainer}>
+          <ThemedText style={{ color: theme.textSecondary }}>
+            No hymns available in this section yet.
+          </ThemedText>
+        </View>
+      }
       contentContainerStyle={[
         styles.listContent,
         {
@@ -150,6 +202,14 @@ export default function HymnSectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyContainer: {
+    padding: Spacing.xl,
+    alignItems: "center",
   },
   listContent: {
     paddingHorizontal: Spacing.lg,

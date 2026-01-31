@@ -1,36 +1,89 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   ScrollView,
   Pressable,
   StyleSheet,
   Share,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { useQuery } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { getHymnById, Hymn } from "@/data/hymns";
 import { isHymnFavorite, addFavoriteHymn, removeFavoriteHymn } from "@/lib/storage";
 import { HymnsStackParamList } from "@/navigation/HymnsStackNavigator";
+import { getApiUrl } from "@/lib/query-client";
 
 type RouteProps = RouteProp<HymnsStackParamList, "HymnDetail">;
+
+interface HymnFromAPI {
+  id: string;
+  number: number;
+  title: string;
+  section: string;
+  sectionId: number;
+  language: "french" | "kreyol";
+  verses: string;
+  chorus: string | null;
+}
+
+interface ParsedVerse {
+  number: number;
+  text: string;
+}
+
+// Parse verses text into structured format
+function parseVerses(versesText: string): ParsedVerse[] {
+  const verses: ParsedVerse[] = [];
+  const parts = versesText.split(/Verse \d+:/i).filter(Boolean);
+
+  parts.forEach((part, index) => {
+    verses.push({
+      number: index + 1,
+      text: part.trim(),
+    });
+  });
+
+  return verses;
+}
 
 export default function HymnDetailScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
+  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
   const route = useRoute<RouteProps>();
   const navigation = useNavigation();
 
   const { hymnId } = route.params;
-  const hymn = getHymnById(hymnId);
+
+  // Fetch hymn from API
+  const { data: hymn, isLoading, error } = useQuery<HymnFromAPI>({
+    queryKey: ["hymn", hymnId],
+    queryFn: async () => {
+      const response = await fetch(`${getApiUrl()}api/hymns/${hymnId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch hymn");
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Parse verses and chorus
+  const parsedVerses = useMemo(() => {
+    if (!hymn) return [];
+    return parseVerses(hymn.verses);
+  }, [hymn]);
 
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -71,25 +124,35 @@ export default function HymnDetailScreen() {
     if (!hymn) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    const lyrics = hymn.verses
+    const lyrics = parsedVerses
       .map((v) => `${v.number}. ${v.text}`)
       .join("\n\n");
 
-    const chorus = hymn.chorus
-      ? `\nRefrain:\n${hymn.chorus.text}`
+    const chorusText = hymn.chorus
+      ? `\nRefrain:\n${hymn.chorus}`
       : "";
 
     const langLabel = hymn.language === "french" ? "Français" : "Kreyòl";
 
     await Share.share({
-      message: `${hymn.number}. ${hymn.title}\n${hymn.section} (${langLabel})\n\n${lyrics}${chorus}\n\n— Chants d'Espérance`,
+      message: `${hymn.number}. ${hymn.title}\n${hymn.section} (${langLabel})\n\n${lyrics}${chorusText}\n\n— Chants d'Espérance`,
     });
-  }, [hymn]);
+  }, [hymn, parsedVerses]);
 
-  if (!hymn) {
+  if (isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-        <ThemedText>Cantique non trouvé</ThemedText>
+      <View style={[styles.container, styles.centered, { backgroundColor: theme.backgroundRoot }]}>
+        <ActivityIndicator size="large" color={theme.accent} />
+        <ThemedText style={{ marginTop: Spacing.md }}>Loading...</ThemedText>
+      </View>
+    );
+  }
+
+  if (error || !hymn) {
+    return (
+      <View style={[styles.container, styles.centered, { backgroundColor: theme.backgroundRoot }]}>
+        <Feather name="alert-circle" size={48} color={theme.textSecondary} />
+        <ThemedText style={{ marginTop: Spacing.md }}>Cantique non trouvé</ThemedText>
       </View>
     );
   }
@@ -101,7 +164,7 @@ export default function HymnDetailScreen() {
         styles.content,
         {
           paddingTop: headerHeight + Spacing.lg,
-          paddingBottom: insets.bottom + Spacing.xl,
+          paddingBottom: tabBarHeight + Spacing.xl,
         },
       ]}
       showsVerticalScrollIndicator={false}
@@ -120,7 +183,7 @@ export default function HymnDetailScreen() {
         </ThemedText>
       </Animated.View>
 
-      {hymn.verses.map((verse, index) => (
+      {parsedVerses.map((verse, index) => (
         <Animated.View
           key={verse.number}
           entering={FadeInDown.delay(200 + index * 100).duration(300)}
@@ -135,18 +198,18 @@ export default function HymnDetailScreen() {
 
       {hymn.chorus ? (
         <Animated.View
-          entering={FadeInDown.delay(200 + hymn.verses.length * 100).duration(300)}
+          entering={FadeInDown.delay(200 + parsedVerses.length * 100).duration(300)}
           style={[styles.chorusContainer, { backgroundColor: theme.backgroundDefault, borderColor: theme.accent }]}
         >
           <ThemedText style={[styles.chorusLabel, { color: theme.accent }]}>
             {hymn.language === "french" ? "REFRAIN" : "REFREN"}
           </ThemedText>
-          <ThemedText style={styles.chorusText}>{hymn.chorus.text}</ThemedText>
+          <ThemedText style={styles.chorusText}>{hymn.chorus}</ThemedText>
         </Animated.View>
       ) : null}
 
       <Animated.View
-        entering={FadeInDown.delay(300 + hymn.verses.length * 100).duration(300)}
+        entering={FadeInDown.delay(300 + parsedVerses.length * 100).duration(300)}
         style={styles.actionsContainer}
       >
         <Pressable
@@ -166,6 +229,10 @@ export default function HymnDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     paddingHorizontal: Spacing.lg,
