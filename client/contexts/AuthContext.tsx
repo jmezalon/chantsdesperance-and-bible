@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { getApiUrl } from "@/lib/query-client";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
+import { getApiUrl, setAuthToken } from "@/lib/query-client";
+
+const TOKEN_KEY = "auth_token";
 
 interface User {
   id: string;
@@ -20,18 +24,60 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+async function getStoredToken(): Promise<string | null> {
+  if (Platform.OS === "web") {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+  return await SecureStore.getItemAsync(TOKEN_KEY);
+}
+
+async function storeToken(token: string): Promise<void> {
+  if (Platform.OS === "web") {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
+  }
+  setAuthToken(token);
+}
+
+async function removeToken(): Promise<void> {
+  if (Platform.OS === "web") {
+    localStorage.removeItem(TOKEN_KEY);
+  } else {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  }
+  setAuthToken(null);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
     try {
+      const token = await getStoredToken();
+      if (!token) {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      setAuthToken(token);
+      
       const response = await fetch(new URL("/api/auth/me", getApiUrl()).toString(), {
-        credentials: "include",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
       });
       const data = await response.json();
-      setUser(data);
+      if (data) {
+        setUser(data);
+      } else {
+        await removeToken();
+        setUser(null);
+      }
     } catch (error) {
+      await removeToken();
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -46,7 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await fetch(new URL("/api/auth/login", getApiUrl()).toString(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ username, password }),
     });
 
@@ -55,14 +100,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(error.error || "Login failed");
     }
 
-    await refreshUser();
+    const data = await response.json();
+    await storeToken(data.token);
+    setUser(data.user);
   };
 
   const register = async (username: string, password: string) => {
     const response = await fetch(new URL("/api/auth/register", getApiUrl()).toString(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ username, password }),
     });
 
@@ -71,14 +117,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(error.error || "Registration failed");
     }
 
-    await refreshUser();
+    const data = await response.json();
+    await storeToken(data.token);
+    setUser(data.user);
   };
 
   const logout = async () => {
     await fetch(new URL("/api/auth/logout", getApiUrl()).toString(), {
       method: "POST",
-      credentials: "include",
     });
+    await removeToken();
     setUser(null);
   };
 

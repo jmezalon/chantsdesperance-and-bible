@@ -4,33 +4,69 @@ import { db } from "./db";
 import { users, hymnSubmissions, insertUserSchema, insertHymnSubmissionSchema } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import session from "express-session";
-import MemoryStore from "memorystore";
+import jwt from "jsonwebtoken";
 
-const SessionStore = MemoryStore(session);
+const JWT_SECRET = process.env.SESSION_SECRET || "hymns-app-jwt-secret-key";
+const JWT_EXPIRES_IN = "7d";
 
-declare module "express-session" {
-  interface SessionData {
-    userId: string;
-  }
+interface JwtPayload {
+  userId: string;
+}
+
+interface AuthRequest extends Request {
+  userId?: string;
 }
 
 const TRUSTED_THRESHOLD = 3;
 
-async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.session.userId) {
+function extractToken(req: Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.substring(7);
+  }
+  return null;
+}
+
+function verifyToken(token: string): JwtPayload | null {
+  try {
+    return jwt.verify(token, JWT_SECRET) as JwtPayload;
+  } catch {
+    return null;
+  }
+}
+
+function generateToken(userId: string): string {
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+
+async function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
+  const token = extractToken(req);
+  if (!token) {
     res.status(401).json({ error: "Authentication required" });
     return;
   }
+  const payload = verifyToken(token);
+  if (!payload) {
+    res.status(401).json({ error: "Invalid or expired token" });
+    return;
+  }
+  req.userId = payload.userId;
   next();
 }
 
-async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.session.userId) {
+async function requireAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+  const token = extractToken(req);
+  if (!token) {
     res.status(401).json({ error: "Authentication required" });
     return;
   }
-  const user = await db.select().from(users).where(eq(users.id, req.session.userId)).limit(1);
+  const payload = verifyToken(token);
+  if (!payload) {
+    res.status(401).json({ error: "Invalid or expired token" });
+    return;
+  }
+  req.userId = payload.userId;
+  const user = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
   if (!user[0]?.isAdmin) {
     res.status(403).json({ error: "Admin access required" });
     return;
@@ -39,20 +75,6 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET || "hymns-app-secret-key",
-      resave: false,
-      saveUninitialized: false,
-      store: new SessionStore({ checkPeriod: 86400000 }),
-      cookie: {
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      },
-    })
-  );
 
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -76,12 +98,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
       }).returning();
 
-      req.session.userId = newUser.id;
+      const token = generateToken(newUser.id);
       res.json({ 
-        id: newUser.id, 
-        username: newUser.username, 
-        isAdmin: newUser.isAdmin,
-        approvedCount: newUser.approvedCount 
+        token,
+        user: {
+          id: newUser.id, 
+          username: newUser.username, 
+          isAdmin: newUser.isAdmin,
+          approvedCount: newUser.approvedCount,
+          isTrusted: newUser.approvedCount >= TRUSTED_THRESHOLD
+        }
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -105,12 +131,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      req.session.userId = user.id;
+      const token = generateToken(user.id);
       res.json({ 
-        id: user.id, 
-        username: user.username, 
-        isAdmin: user.isAdmin,
-        approvedCount: user.approvedCount 
+        token,
+        user: {
+          id: user.id, 
+          username: user.username, 
+          isAdmin: user.isAdmin,
+          approvedCount: user.approvedCount,
+          isTrusted: user.approvedCount >= TRUSTED_THRESHOLD
+        }
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -119,21 +149,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        res.status(500).json({ error: "Logout failed" });
-        return;
-      }
-      res.json({ success: true });
-    });
+    res.json({ success: true });
   });
 
   app.get("/api/auth/me", async (req, res) => {
-    if (!req.session.userId) {
+    const token = extractToken(req);
+    if (!token) {
       res.json(null);
       return;
     }
-    const [user] = await db.select().from(users).where(eq(users.id, req.session.userId)).limit(1);
+    const payload = verifyToken(token);
+    if (!payload) {
+      res.json(null);
+      return;
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
     if (!user) {
       res.json(null);
       return;
@@ -185,22 +215,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      const [submitter] = await db.select().from(users).where(eq(users.id, req.session.userId!)).limit(1);
+      const authReq = req as AuthRequest;
+      const [submitter] = await db.select().from(users).where(eq(users.id, authReq.userId!)).limit(1);
       const isTrusted = submitter.approvedCount >= TRUSTED_THRESHOLD;
       const autoApprove = isTrusted || submitter.isAdmin;
 
       const [submission] = await db.insert(hymnSubmissions).values({
         ...parsed.data,
-        submittedBy: req.session.userId!,
+        submittedBy: authReq.userId!,
         status: autoApprove ? "approved" : "pending",
-        reviewedBy: autoApprove ? req.session.userId! : null,
+        reviewedBy: autoApprove ? authReq.userId! : null,
         reviewedAt: autoApprove ? new Date() : null,
       }).returning();
 
       if (autoApprove) {
         await db.update(users)
           .set({ approvedCount: submitter.approvedCount + 1 })
-          .where(eq(users.id, req.session.userId!));
+          .where(eq(users.id, authReq.userId!));
       }
 
       res.json({ 
@@ -218,9 +249,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/submissions", requireAuth, async (req, res) => {
     try {
+      const authReq = req as AuthRequest;
       const submissions = await db.select()
         .from(hymnSubmissions)
-        .where(eq(hymnSubmissions.submittedBy, req.session.userId!))
+        .where(eq(hymnSubmissions.submittedBy, authReq.userId!))
         .orderBy(desc(hymnSubmissions.createdAt));
       res.json(submissions);
     } catch (error) {
@@ -265,7 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/submissions/:id/review", requireAdmin, async (req, res) => {
     try {
-      const id = req.params.id as string;
+      const { id } = req.params;
       const { action, note } = req.body;
 
       if (!["approve", "reject"].includes(action)) {
@@ -279,10 +311,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
+      const authReq = req as AuthRequest;
       const [updated] = await db.update(hymnSubmissions)
         .set({
           status: action === "approve" ? "approved" : "rejected",
-          reviewedBy: req.session.userId!,
+          reviewedBy: authReq.userId!,
           reviewNote: note || null,
           reviewedAt: new Date(),
         })

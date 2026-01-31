@@ -21,7 +21,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { hymnSections } from "@/data/hymns";
-import { getApiUrl } from "@/lib/query-client";
+import { apiRequest, getApiUrl } from "@/lib/query-client";
 
 export default function SubmitHymnScreen() {
   const insets = useSafeAreaInsets();
@@ -94,19 +94,14 @@ export default function SubmitHymnScreen() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(new URL("/api/submissions", getApiUrl()).toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          sectionId,
-          sectionName: selectedSection.name,
-          language: selectedSection.language,
-          hymnNumber: parseInt(hymnNumber),
-          title: title.trim(),
-          verses: verses.trim(),
-          chorus: chorus.trim() || null,
-        }),
+      const response = await apiRequest("POST", "/api/submissions", {
+        sectionId,
+        sectionName: selectedSection.name,
+        language: selectedSection.language,
+        hymnNumber: parseInt(hymnNumber),
+        title: title.trim(),
+        verses: verses.trim(),
+        chorus: chorus.trim() || null,
       });
 
       if (!response.ok) {
