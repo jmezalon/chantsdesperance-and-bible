@@ -184,6 +184,15 @@ export default function SettingsScreen() {
                 />
               ) : null}
               <SettingRow
+                icon="trash-2"
+                title="Delete Account"
+                subtitle="Permanently delete your account"
+                onPress={() => {
+                  navigation.navigate("DeleteAccount");
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              />
+              <SettingRow
                 icon="log-out"
                 title="Sign Out"
                 onPress={handleLogout}
