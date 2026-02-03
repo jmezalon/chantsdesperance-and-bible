@@ -177,6 +177,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Delete user account
+  app.delete("/api/auth/account", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.userId!;
+
+      // Delete user's hymn submissions first (foreign key constraint)
+      await db.delete(hymnSubmissions).where(eq(hymnSubmissions.submittedBy, userId));
+
+      // Delete the user account
+      await db.delete(users).where(eq(users.id, userId));
+
+      res.json({ success: true, message: "Account deleted successfully" });
+    } catch (error) {
+      console.error("Account deletion error:", error);
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  });
+
   app.post("/api/submissions", requireAuth, async (req, res) => {
     try {
       const parsed = insertHymnSubmissionSchema.safeParse(req.body);
