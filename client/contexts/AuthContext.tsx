@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const deleteAccount = async (password: string) => {
     const token = await getStoredToken();
-    const response = await fetch(new URL("/api/auth/delete-account", getApiUrl()).toString(), {
+    const response = await fetch(new URL("/api/auth/account", getApiUrl()).toString(), {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
