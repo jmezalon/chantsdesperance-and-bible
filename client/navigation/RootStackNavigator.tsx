@@ -6,6 +6,7 @@ import SettingsScreen from "@/screens/SettingsScreen";
 import AuthScreen from "@/screens/AuthScreen";
 import SubmitHymnScreen from "@/screens/SubmitHymnScreen";
 import AdminReviewScreen from "@/screens/AdminReviewScreen";
+import DeleteAccountScreen from "@/screens/DeleteAccountScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type RootStackParamList = {
@@ -14,6 +15,7 @@ export type RootStackParamList = {
   Auth: undefined;
   SubmitHymn: undefined;
   AdminReview: undefined;
+  DeleteAccount: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -58,6 +60,14 @@ export default function RootStackNavigator() {
         options={{
           presentation: "modal",
           headerTitle: "Review Submissions",
+        }}
+      />
+      <Stack.Screen
+        name="DeleteAccount"
+        component={DeleteAccountScreen}
+        options={{
+          presentation: "modal",
+          headerTitle: "Delete Account",
         }}
       />
     </Stack.Navigator>
