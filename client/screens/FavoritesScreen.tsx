@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -33,7 +34,7 @@ import {
   FavoriteHymn,
   FavoriteVerse,
 } from "@/lib/storage";
-import { getHymnById } from "@/data/hymns";
+import { getApiUrl } from "@/lib/query-client";
 import { FavoritesStackParamList } from "@/navigation/FavoritesStackNavigator";
 
 type NavigationProp = NativeStackNavigationProp<FavoritesStackParamList>;
@@ -42,8 +43,22 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type TabType = "hymns" | "verses";
 
+interface HymnFromAPI {
+  id: string;
+  number: number;
+  title: string;
+  section: string;
+  sectionId: number;
+  language: "french" | "kreyol";
+}
+
+interface FavoriteHymnWithData extends FavoriteHymn {
+  hymnData?: HymnFromAPI;
+  isLoading?: boolean;
+}
+
 interface HymnItemProps {
-  favorite: FavoriteHymn;
+  favorite: FavoriteHymnWithData;
   index: number;
   onPress: () => void;
   onRemove: () => void;
@@ -52,7 +67,7 @@ interface HymnItemProps {
 function HymnFavoriteItem({ favorite, index, onPress, onRemove }: HymnItemProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
-  const hymn = getHymnById(favorite.hymnId);
+  const hymn = favorite.hymnData;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -65,6 +80,25 @@ function HymnFavoriteItem({ favorite, index, onPress, onRemove }: HymnItemProps)
   const handlePressOut = () => {
     scale.value = withSpring(1, { damping: 15, stiffness: 150 });
   };
+
+  if (favorite.isLoading) {
+    return (
+      <Animated.View
+        entering={FadeInDown.delay(index * 50).duration(300)}
+        style={[
+          styles.favoriteItem,
+          { backgroundColor: theme.backgroundDefault, borderColor: theme.border },
+        ]}
+      >
+        <ActivityIndicator size="small" color={theme.accent} />
+        <View style={styles.itemInfo}>
+          <ThemedText style={[styles.itemSubtitle, { color: theme.textSecondary }]}>
+            Chargement...
+          </ThemedText>
+        </View>
+      </Animated.View>
+    );
+  }
 
   if (!hymn) return null;
 
@@ -175,7 +209,7 @@ export default function FavoritesScreen() {
   const navigation = useNavigation<NavigationProp>();
 
   const [activeTab, setActiveTab] = useState<TabType>("hymns");
-  const [favoriteHymns, setFavoriteHymns] = useState<FavoriteHymn[]>([]);
+  const [favoriteHymns, setFavoriteHymns] = useState<FavoriteHymnWithData[]>([]);
   const [favoriteVerses, setFavoriteVerses] = useState<FavoriteVerse[]>([]);
 
   const loadFavorites = useCallback(async () => {
@@ -183,8 +217,33 @@ export default function FavoritesScreen() {
       getFavoriteHymns(),
       getFavoriteVerses(),
     ]);
-    setFavoriteHymns(hymns);
+
+    // Set hymns with loading state initially
+    const hymnsWithLoading: FavoriteHymnWithData[] = hymns.map(h => ({
+      ...h,
+      isLoading: true,
+    }));
+    setFavoriteHymns(hymnsWithLoading);
     setFavoriteVerses(verses);
+
+    // Fetch hymn details from API for each favorite
+    const apiUrl = getApiUrl();
+    const updatedHymns: FavoriteHymnWithData[] = [];
+
+    for (const favorite of hymns) {
+      try {
+        const response = await fetch(`${apiUrl}api/hymns/${favorite.hymnId}`);
+        if (response.ok) {
+          const hymnData: HymnFromAPI = await response.json();
+          updatedHymns.push({ ...favorite, hymnData, isLoading: false });
+        }
+        // If not ok (hymn deleted), skip it
+      } catch {
+        // On error, skip this hymn
+      }
+    }
+
+    setFavoriteHymns(updatedHymns);
   }, []);
 
   useFocusEffect(
@@ -214,7 +273,7 @@ export default function FavoritesScreen() {
   );
 
   const renderHymnItem = useCallback(
-    ({ item, index }: { item: FavoriteHymn; index: number }) => (
+    ({ item, index }: { item: FavoriteHymnWithData; index: number }) => (
       <HymnFavoriteItem
         favorite={item}
         index={index}
