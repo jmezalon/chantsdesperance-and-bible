@@ -195,6 +195,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+    // Admin-only: Delete a hymn
+  app.delete("/api/admin/hymns/:id", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, req.userId!)).limit(1);
+      if (!user?.isAdmin) {
+        res.status(403).json({ error: "Admin access required" });
+        return;
+      }
+
+      const hymnId = req.params.id;
+      const [hymn] = await db.select().from(hymnSubmissions).where(eq(hymnSubmissions.id, hymnId)).limit(1);
+      if (!hymn) {
+        res.status(404).json({ error: "Hymn not found" });
+        return;
+      }
+
+      await db.delete(hymnSubmissions).where(eq(hymnSubmissions.id, hymnId));
+      res.json({ success: true, message: "Hymn deleted successfully" });
+    } catch (error) {
+      console.error("Hymn deletion error:", error);
+      res.status(500).json({ error: "Failed to delete hymn" });
+    }
+  });
+
   app.post("/api/submissions", requireAuth, async (req, res) => {
     try {
       const parsed = insertHymnSubmissionSchema.safeParse(req.body);
