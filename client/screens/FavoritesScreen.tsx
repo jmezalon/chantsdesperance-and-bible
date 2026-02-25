@@ -146,19 +146,37 @@ function HymnFavoriteItem({ favorite, index, onPress, onRemove }: HymnItemProps)
 interface VerseItemProps {
   verse: FavoriteVerse;
   index: number;
+  onPress: () => void;
   onRemove: () => void;
 }
 
-function VerseFavoriteItem({ verse, index, onRemove }: VerseItemProps) {
+function VerseFavoriteItem({ verse, index, onPress, onRemove }: VerseItemProps) {
   const { theme } = useTheme();
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.98, { damping: 15, stiffness: 150 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+  };
 
   return (
-    <Animated.View
+    <AnimatedPressable
       entering={FadeInDown.delay(index * 50).duration(300)}
       exiting={SlideOutRight.duration(200)}
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       style={[
         styles.verseItem,
         { backgroundColor: theme.backgroundDefault, borderColor: theme.border },
+        animatedStyle,
       ]}
     >
       <View style={styles.verseHeader}>
@@ -175,7 +193,7 @@ function VerseFavoriteItem({ verse, index, onRemove }: VerseItemProps) {
       <ThemedText style={[styles.verseText, { color: theme.text }]} numberOfLines={3}>
         "{verse.text}"
       </ThemedText>
-    </Animated.View>
+    </AnimatedPressable>
   );
 }
 
@@ -272,6 +290,19 @@ export default function FavoritesScreen() {
     [navigation]
   );
 
+  const handleVersePress = useCallback(
+    (verse: FavoriteVerse) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      navigation.navigate("FavoriteBibleReader", {
+        bookId: verse.bookId,
+        bookName: verse.bookName,
+        chapter: verse.chapter,
+        version: verse.version,
+      });
+    },
+    [navigation]
+  );
+
   const renderHymnItem = useCallback(
     ({ item, index }: { item: FavoriteHymnWithData; index: number }) => (
       <HymnFavoriteItem
@@ -289,10 +320,11 @@ export default function FavoritesScreen() {
       <VerseFavoriteItem
         verse={item}
         index={index}
+        onPress={() => handleVersePress(item)}
         onRemove={() => handleRemoveVerse(item.id)}
       />
     ),
-    [handleRemoveVerse]
+    [handleVersePress, handleRemoveVerse]
   );
 
   return (
