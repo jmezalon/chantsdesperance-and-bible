@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 
 import FavoritesScreen from "@/screens/FavoritesScreen";
 import HymnDetailScreen from "@/screens/HymnDetailScreen";
+import BibleReaderScreen from "@/screens/BibleReaderScreen";
 import { ThemedText } from "@/components/ThemedText";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { useTheme } from "@/hooks/useTheme";
@@ -15,6 +16,12 @@ import { Spacing } from "@/constants/theme";
 export type FavoritesStackParamList = {
   FavoritesHome: undefined;
   FavoriteHymnDetail: { hymnId: string };
+  FavoriteBibleReader: {
+    bookId: number;
+    bookName: string;
+    chapter: number;
+    version: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<FavoritesStackParamList>();
@@ -77,6 +84,13 @@ export default function FavoritesStackNavigator() {
       <Stack.Screen
         name="FavoriteHymnDetail"
         component={HymnDetailScreen}
+        options={{
+          headerTitle: "",
+        }}
+      />
+      <Stack.Screen
+        name="FavoriteBibleReader"
+        component={BibleReaderScreen}
         options={{
           headerTitle: "",
         }}
