@@ -21,7 +21,7 @@ export const bibleVersions: BibleVersion[] = [
   { id: "ESV", name: "English Standard Version", abbreviation: "ESV", language: "english", available: true },
   { id: "BDS", name: "La Bible du Semeur", abbreviation: "BDS", language: "french", available: true },
   { id: "FRLSG", name: "Louis Segond 1910", abbreviation: "LSG", language: "french", available: true },
-  { id: "BSA", name: "Bib Sen An (Kreyol)", abbreviation: "BSA", language: "kreyol", available: false },
+  { id: "BSA", name: "Bib Sen An (Kreyol)", abbreviation: "BSA", language: "kreyol", available: true },
 ];
 
 export const bibleBooks: BibleBook[] = [

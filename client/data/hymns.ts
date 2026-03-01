@@ -66,10 +66,10 @@ export const hymnSections: HymnSection[] = [
   },
   {
     id: 5,
-    name: "Melodi Jwayal",
-    nameFull: "Melodi Jwayal (Kreyòl)",
+    name: "Mélodies Joyeuses",
+    nameFull: "Mélodies Joyeuses (Kreyòl)",
     description: "Chante jwa pou selebre - Vèsyon kreyòl",
-    hymnCount: 100,
+    hymnCount: 85,
     language: "kreyol",
     parentSection: "Mélodies Joyeuses",
   },
@@ -412,12 +412,12 @@ export const hymns: Hymn[] = [
       },
     ],
   },
-  // Melodi Jwayal - Kreyol (different songs from Mélodies Joyeuses French!)
+  // M - Kreyol (different songs from Mélodies Joyeuses French!)
   {
     id: "mj-kr-8",
     number: 8,
     title: "Bondye renmen m anpil",
-    section: "Melodi Jwayal (Kreyòl)",
+    section: "M (Kreyòl)",
     sectionId: 5,
     language: "kreyol",
     verses: [
