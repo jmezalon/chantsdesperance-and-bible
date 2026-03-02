@@ -5,7 +5,6 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -15,6 +14,7 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Picker } from "@react-native-picker/picker";
 
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { ThemedText } from "@/components/ThemedText";
 import { Modal } from "@/components/Modal";
 import { useTheme } from "@/hooks/useTheme";
@@ -183,7 +183,8 @@ export default function SubmitHymnScreen() {
         message={modal.message}
         onClose={closeModal}
       />
-      <ScrollView
+      <KeyboardAwareScrollViewCompat
+        bottomOffset={20}
         contentContainerStyle={[
           styles.content,
           {
@@ -360,7 +361,7 @@ export default function SubmitHymnScreen() {
             )}
           </Pressable>
         </Animated.View>
-      </ScrollView>
+      </KeyboardAwareScrollViewCompat>
     </View>
   );
 }

@@ -299,27 +299,6 @@ export default function SettingsScreen() {
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(350).duration(300)}>
-        <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-          CANTIQUES
-        </ThemedText>
-        <View style={[styles.settingsGroup, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
-          <SettingRow
-            icon="globe"
-            title="Afficher Kreyòl"
-            subtitle="Afficher la traduction kreyòl quand disponible"
-            rightElement={
-              <Switch
-                value={settings.showKreyol}
-                onValueChange={(value) => handleUpdateSettings({ showKreyol: value })}
-                trackColor={{ false: theme.backgroundSecondary, true: theme.accent }}
-                thumbColor="#FFFFFF"
-              />
-            }
-          />
-        </View>
-      </Animated.View>
-
       <Animated.View entering={FadeInDown.delay(450).duration(300)}>
         <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
           À PROPOS
@@ -328,7 +307,7 @@ export default function SettingsScreen() {
           <SettingRow
             icon="info"
             title="Version"
-            subtitle="1.0.0"
+            subtitle="1.2.0"
           />
           <SettingRow
             icon="heart"
