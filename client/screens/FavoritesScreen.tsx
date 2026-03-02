@@ -49,7 +49,7 @@ interface HymnFromAPI {
   title: string;
   section: string;
   sectionId: number;
-  language: "french" | "kreyol";
+  language: "french" | "kreyol" | "english";
 }
 
 interface FavoriteHymnWithData extends FavoriteHymn {
@@ -125,10 +125,10 @@ function HymnFavoriteItem({ favorite, index, onPress, onRemove }: HymnItemProps)
         <View style={styles.itemMeta}>
           <View style={[
             styles.languageBadge, 
-            { backgroundColor: hymn.language === "french" ? theme.accent : "#2D5A27" }
+            { backgroundColor: hymn.language === "french" ? theme.accent : hymn.language === "english" ? "#1a5276" : "#2D5A27" }
           ]}>
             <ThemedText style={styles.languageBadgeText}>
-              {hymn.language === "french" ? "FR" : "KR"}
+              {hymn.language === "french" ? "FR" : hymn.language === "english" ? "EN" : "KR"}
             </ThemedText>
           </View>
           <ThemedText style={[styles.itemSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>

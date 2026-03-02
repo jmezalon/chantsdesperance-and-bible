@@ -27,7 +27,7 @@ interface Hymn {
   title: string;
   section: string;
   sectionId: number;
-  language: "french" | "kreyol";
+  language: "french" | "kreyol" | "english";
   verses: string;
   chorus: string | null;
 }
@@ -139,10 +139,10 @@ export default function HymnSectionScreen() {
       <View style={styles.headerContainer}>
         <View style={[
           styles.languageBadge, 
-          { backgroundColor: section.language === "french" ? theme.accent : "#2D5A27" }
+          { backgroundColor: section.language === "french" ? theme.accent : section.language === "english" ? "#1a5276" : "#2D5A27" }
         ]}>
           <ThemedText style={styles.languageBadgeText}>
-            {section.language === "french" ? "Français" : "Kreyòl"}
+            {section.language === "french" ? "Français" : section.language === "english" ? "English" : "Kreyòl"}
           </ThemedText>
         </View>
         <ThemedText style={[styles.description, { color: theme.textSecondary }]}>

@@ -185,10 +185,10 @@ export default function AdminReviewScreen() {
                     </ThemedText>
                     <View style={[
                       styles.languageBadge,
-                      { backgroundColor: item.submission.language === "french" ? "#C17F3E" : "#2D5A27" }
+                      { backgroundColor: item.submission.language === "french" ? "#C17F3E" : item.submission.language === "english" ? "#1a5276" : "#2D5A27" }
                     ]}>
                       <ThemedText style={styles.languageText}>
-                        {item.submission.language === "french" ? "FR" : "KR"}
+                        {item.submission.language === "french" ? "FR" : item.submission.language === "english" ? "EN" : "KR"}
                       </ThemedText>
                     </View>
                   </View>

@@ -402,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: h.title,
         section: h.sectionName,
         sectionId: h.sectionId,
-        language: h.language as "french" | "kreyol",
+        language: h.language as "french" | "kreyol" | "english",
         verses: h.verses,
         chorus: h.chorus,
       }));
@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .orderBy(hymnSubmissions.hymnNumber);
 
       // Filter by language if specified
-      if (language && (language === "french" || language === "kreyol")) {
+      if (language && (language === "french" || language === "kreyol" || language === "english")) {
         hymns = hymns.filter(h => h.language === language);
       }
 
@@ -483,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: h.title,
         section: h.sectionName,
         sectionId: h.sectionId,
-        language: h.language as "french" | "kreyol",
+        language: h.language as "french" | "kreyol" | "english",
         verses: h.verses,
         chorus: h.chorus,
       }));
@@ -520,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: hymn.title,
         section: hymn.sectionName,
         sectionId: hymn.sectionId,
-        language: hymn.language as "french" | "kreyol",
+        language: hymn.language as "french" | "kreyol" | "english",
         verses: hymn.verses,
         chorus: hymn.chorus,
       };

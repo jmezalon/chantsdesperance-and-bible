@@ -31,7 +31,7 @@ interface HymnFromAPI {
   title: string;
   section: string;
   sectionId: number;
-  language: "french" | "kreyol";
+  language: "french" | "kreyol" | "english";
   verses: string;
   chorus: string | null;
 }
@@ -132,7 +132,7 @@ export default function HymnDetailScreen() {
       ? `\nRefrain:\n${hymn.chorus}`
       : "";
 
-    const langLabel = hymn.language === "french" ? "Français" : "Kreyòl";
+    const langLabel = hymn.language === "french" ? "Français" : hymn.language === "english" ? "English" : "Kreyòl";
 
     await Share.share({
       message: `${hymn.number}. ${hymn.title}\n${hymn.section} (${langLabel})\n\n${lyrics}${chorusText}\n\n— Chants d'Espérance`,
@@ -172,10 +172,10 @@ export default function HymnDetailScreen() {
       <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.headerInfo}>
         <View style={[
           styles.languageBadge, 
-          { backgroundColor: hymn.language === "french" ? theme.accent : "#2D5A27" }
+          { backgroundColor: hymn.language === "french" ? theme.accent : hymn.language === "english" ? "#1a5276" : "#2D5A27" }
         ]}>
           <ThemedText style={styles.languageBadgeText}>
-            {hymn.language === "french" ? "Français" : "Kreyòl"}
+            {hymn.language === "french" ? "Français" : hymn.language === "english" ? "English" : "Kreyòl"}
           </ThemedText>
         </View>
         <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
@@ -202,7 +202,7 @@ export default function HymnDetailScreen() {
           style={[styles.chorusContainer, { backgroundColor: theme.backgroundDefault, borderColor: theme.accent }]}
         >
           <ThemedText style={[styles.chorusLabel, { color: theme.accent }]}>
-            {hymn.language === "french" ? "REFRAIN" : "REFREN"}
+            {hymn.language === "french" ? "REFRAIN" : hymn.language === "english" ? "CHORUS" : "REFREN"}
           </ThemedText>
           <ThemedText style={styles.chorusText}>{hymn.chorus}</ThemedText>
         </Animated.View>
@@ -218,7 +218,7 @@ export default function HymnDetailScreen() {
         >
           <Feather name="share" size={20} color={theme.text} />
           <ThemedText style={styles.actionButtonText}>
-            {hymn.language === "french" ? "Partager" : "Pataje"}
+            {hymn.language === "french" ? "Partager" : hymn.language === "english" ? "Share" : "Pataje"}
           </ThemedText>
         </Pressable>
       </Animated.View>

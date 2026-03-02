@@ -39,7 +39,7 @@ interface Hymn {
   title: string;
   section: string;
   sectionId: number;
-  language: "french" | "kreyol";
+  language: "french" | "kreyol" | "english";
   verses: string;
   chorus: string | null;
 }
@@ -98,7 +98,7 @@ function HymnItem({ hymn, index, onPress }: HymnItemProps) {
       </View>
       <View style={[styles.languageBadge, { backgroundColor: theme.backgroundSecondary }]}>
         <ThemedText style={[styles.languageBadgeText, { color: theme.textSecondary }]}>
-          {hymn.language === "french" ? "FR" : "KR"}
+          {hymn.language === "french" ? "FR" : hymn.language === "english" ? "EN" : "KR"}
         </ThemedText>
       </View>
       <Feather name="chevron-right" size={20} color={theme.textSecondary} />
@@ -148,10 +148,10 @@ function SectionItem({ section, index, onPress }: SectionItemProps) {
       </View>
       <View style={[
         styles.languageBadgeLarge, 
-        { backgroundColor: section.language === "french" ? theme.accent : "#2D5A27" }
+        { backgroundColor: section.language === "french" ? theme.accent : section.language === "english" ? "#1a5276" : "#2D5A27" }
       ]}>
         <ThemedText style={styles.languageBadgeLargeText}>
-          {section.language === "french" ? "FR" : "KR"}
+          {section.language === "french" ? "FR" : section.language === "english" ? "EN" : "KR"}
         </ThemedText>
       </View>
       <Feather name="chevron-right" size={20} color={theme.textSecondary} />
@@ -232,6 +232,9 @@ export default function HymnsScreen() {
     } else if (lowerQuery.includes("kreyol") || lowerQuery.includes("kreyòl") || lowerQuery.includes(" kr")) {
       language = "kreyol";
       cleanQuery = lowerQuery.replace(/kreyol|kreyòl| kr/gi, "").trim();
+    } else if (lowerQuery.includes("english") || lowerQuery.includes(" en")) {
+      language = "english";
+      cleanQuery = lowerQuery.replace(/english| en/gi, "").trim();
     }
 
     return { cleanQuery, language };
