@@ -272,16 +272,18 @@ export function searchHymns(query: string): Hymn[] {
   // Check if query contains language indicator
   const hasFrench = lowerQuery.includes("français") || lowerQuery.includes("francais") || lowerQuery.includes("fr ");
   const hasKreyol = lowerQuery.includes("kreyol") || lowerQuery.includes("kreyòl") || lowerQuery.includes("kr ");
-  
+  const hasEnglish = lowerQuery.includes("english") || lowerQuery.includes("en ");
+
   // Clean query for number/title search
   const cleanQuery = lowerQuery
-    .replace(/français|francais|kreyol|kreyòl|fr |kr /gi, "")
+    .replace(/français|francais|kreyol|kreyòl|english|fr |kr |en /gi, "")
     .trim();
 
   return hymns.filter((hymn) => {
     // Language filter
     if (hasFrench && hymn.language !== "french") return false;
     if (hasKreyol && hymn.language !== "kreyol") return false;
+    if (hasEnglish && hymn.language !== "english") return false;
 
     const numberMatch = hymn.number.toString().includes(cleanQuery);
     const titleMatch = hymn.title.toLowerCase().includes(cleanQuery);
@@ -296,7 +298,7 @@ export function searchHymns(query: string): Hymn[] {
       : false;
     
     // Also match on the full query if no language specified
-    if (!hasFrench && !hasKreyol) {
+    if (!hasFrench && !hasKreyol && !hasEnglish) {
       return numberMatch || titleMatch || sectionMatch || lyricsMatch || chorusMatch ||
              hymn.title.toLowerCase().includes(lowerQuery) ||
              hymn.section.toLowerCase().includes(lowerQuery) ||
