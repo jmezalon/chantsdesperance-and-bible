@@ -189,9 +189,6 @@ export default function HymnDetailScreen() {
           entering={FadeInDown.delay(200 + index * 100).duration(300)}
           style={styles.verseContainer}
         >
-          <View style={[styles.verseNumber, { backgroundColor: theme.accent }]}>
-            <ThemedText style={styles.verseNumberText}>{verse.number}</ThemedText>
-          </View>
           <ThemedText style={styles.verseText}>{verse.text}</ThemedText>
         </Animated.View>
       ))}
