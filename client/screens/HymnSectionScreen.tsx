@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { View, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -12,7 +12,7 @@ import Animated, {
   withSpring,
   FadeInDown,
 } from "react-native-reanimated";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
@@ -61,7 +61,7 @@ function HymnItem({ hymn, index, onPress }: HymnItemProps) {
 
   return (
     <AnimatedPressable
-      entering={FadeInDown.delay(index * 50).duration(300)}
+      entering={FadeInDown.delay(Math.min(index, 15) * 50).duration(300)}
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
@@ -94,18 +94,48 @@ export default function HymnSectionScreen() {
   const { sectionId, sectionName } = route.params;
   const section = getSectionById(sectionId);
 
-  // Fetch hymns from API
-  const { data: hymns = [], isLoading, error } = useQuery<Hymn[]>({
+  const PAGE_SIZE = 30;
+
+  // Fetch hymns from API with pagination
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["hymns", "section", sectionId],
-    queryFn: async () => {
-      const response = await fetch(`${getApiUrl()}api/hymns/section/${sectionId}`);
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await fetch(
+        `${getApiUrl()}api/hymns/section/${sectionId}?page=${pageParam}&limit=${PAGE_SIZE}`
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch hymns");
       }
-      return response.json();
+      return response.json() as Promise<{
+        hymns: Hymn[];
+        page: number;
+        total: number;
+        hasMore: boolean;
+      }>;
     },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.page + 1 : undefined,
+    initialPageParam: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  const hymns = useMemo(
+    () => data?.pages.flatMap((page) => page.hymns) ?? [],
+    [data]
+  );
+
+  const handleEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -186,6 +216,15 @@ export default function HymnSectionScreen() {
           </ThemedText>
         </View>
       }
+      ListFooterComponent={
+        isFetchingNextPage ? (
+          <View style={styles.footerLoader}>
+            <ActivityIndicator size="small" color={theme.accent} />
+          </View>
+        ) : null
+      }
+      onEndReached={handleEndReached}
+      onEndReachedThreshold={0.5}
       contentContainerStyle={[
         styles.listContent,
         {
@@ -209,6 +248,10 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     padding: Spacing.xl,
+    alignItems: "center",
+  },
+  footerLoader: {
+    paddingVertical: Spacing.lg,
     alignItems: "center",
   },
   listContent: {

@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "node:http";
 import { db } from "./db";
 import { users, hymnSubmissions, insertUserSchema, insertHymnSubmissionSchema } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -382,18 +382,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get hymns by section (approved only)
+  // Get hymns by section (approved only) with pagination
   app.get("/api/hymns/section/:sectionId", async (req, res) => {
     const { sectionId } = req.params;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 30));
+    const offset = (page - 1) * limit;
 
     try {
+      const [totalResult] = await db.select({ value: count() })
+        .from(hymnSubmissions)
+        .where(and(
+          eq(hymnSubmissions.sectionId, Number(sectionId)),
+          eq(hymnSubmissions.status, "approved")
+        ));
+
+      const total = totalResult.value;
+
       const hymns = await db.select()
         .from(hymnSubmissions)
         .where(and(
           eq(hymnSubmissions.sectionId, Number(sectionId)),
           eq(hymnSubmissions.status, "approved")
         ))
-        .orderBy(hymnSubmissions.hymnNumber);
+        .orderBy(hymnSubmissions.hymnNumber)
+        .limit(limit)
+        .offset(offset);
 
       // Transform to match client Hymn interface
       const transformedHymns = hymns.map(h => ({
@@ -407,7 +421,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         chorus: h.chorus,
       }));
 
-      res.json(transformedHymns);
+      res.json({
+        hymns: transformedHymns,
+        page,
+        limit,
+        total,
+        hasMore: offset + hymns.length < total,
+      });
     } catch (error) {
       console.error("Error fetching hymns by section:", error);
       res.status(500).json({ error: "Failed to fetch hymns" });
