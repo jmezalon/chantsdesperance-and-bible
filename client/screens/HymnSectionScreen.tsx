@@ -60,27 +60,28 @@ function HymnItem({ hymn, index, onPress }: HymnItemProps) {
   };
 
   return (
-    <AnimatedPressable
-      entering={FadeInDown.delay(Math.min(index, 15) * 50).duration(300)}
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      style={[
-        styles.hymnItem,
-        { backgroundColor: theme.backgroundDefault, borderColor: theme.border },
-        animatedStyle,
-      ]}
-    >
-      <View style={[styles.hymnNumber, { backgroundColor: theme.accent }]}>
-        <ThemedText style={styles.hymnNumberText}>{hymn.number}</ThemedText>
-      </View>
-      <View style={styles.hymnInfo}>
-        <ThemedText style={styles.hymnTitle} numberOfLines={2}>
-          {hymn.title}
-        </ThemedText>
-      </View>
-      <Feather name="chevron-right" size={20} color={theme.textSecondary} />
-    </AnimatedPressable>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 15) * 50).duration(300)}>
+      <AnimatedPressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[
+          styles.hymnItem,
+          { backgroundColor: theme.backgroundDefault, borderColor: theme.border },
+          animatedStyle,
+        ]}
+      >
+        <View style={[styles.hymnNumber, { backgroundColor: theme.accent }]}>
+          <ThemedText style={styles.hymnNumberText}>{hymn.number}</ThemedText>
+        </View>
+        <View style={styles.hymnInfo}>
+          <ThemedText style={styles.hymnTitle} numberOfLines={2}>
+            {hymn.title}
+          </ThemedText>
+        </View>
+        <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+      </AnimatedPressable>
+    </Animated.View>
   );
 }
 

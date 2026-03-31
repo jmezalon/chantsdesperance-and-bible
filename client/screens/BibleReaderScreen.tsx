@@ -20,7 +20,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { getBookById, bibleVersions } from "@/data/bible";
-import { addFavoriteVerse, isVerseFavorite } from "@/lib/storage";
+import { addFavoriteVerse, isVerseFavorite, saveLastReadPassage } from "@/lib/storage";
 import { BibleStackParamList } from "@/navigation/BibleStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 
@@ -146,6 +146,10 @@ export default function BibleReaderScreen() {
       headerTitle: `${bookName} ${chapter}`,
     });
   }, [navigation, bookName, chapter]);
+
+  useEffect(() => {
+    saveLastReadPassage({ bookId, bookName, chapter, version });
+  }, [bookId, bookName, chapter, version]);
 
   const handleChapterChange = useCallback((newChapter: number) => {
     setChapter(newChapter);

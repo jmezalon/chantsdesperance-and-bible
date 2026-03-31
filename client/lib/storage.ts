@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const FAVORITES_HYMNS_KEY = "@favorites_hymns";
 const FAVORITES_VERSES_KEY = "@favorites_verses";
 const SETTINGS_KEY = "@settings";
+const LAST_READ_PASSAGE_KEY = "@last_read_passage";
 
 export interface FavoriteHymn {
   hymnId: string;
@@ -101,4 +102,26 @@ export async function updateSettings(settings: Partial<AppSettings>): Promise<vo
   const current = await getSettings();
   const updated = { ...current, ...settings };
   await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+}
+
+export interface LastReadPassage {
+  bookId: number;
+  bookName: string;
+  chapter: number;
+  version: string;
+  readAt: number;
+}
+
+export async function getLastReadPassage(): Promise<LastReadPassage | null> {
+  try {
+    const data = await AsyncStorage.getItem(LAST_READ_PASSAGE_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveLastReadPassage(passage: Omit<LastReadPassage, "readAt">): Promise<void> {
+  const data: LastReadPassage = { ...passage, readAt: Date.now() };
+  await AsyncStorage.setItem(LAST_READ_PASSAGE_KEY, JSON.stringify(data));
 }

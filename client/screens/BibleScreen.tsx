@@ -30,7 +30,7 @@ import {
   BibleVersion,
 } from "@/data/bible";
 import { BibleStackParamList } from "@/navigation/BibleStackNavigator";
-import { getSettings } from "@/lib/storage";
+import { getSettings, getLastReadPassage, LastReadPassage } from "@/lib/storage";
 
 type NavigationProp = NativeStackNavigationProp<BibleStackParamList>;
 
@@ -135,12 +135,14 @@ export default function BibleScreen() {
 
   const [selectedVersion, setSelectedVersion] = useState("NKJV");
   const [expandedSection, setExpandedSection] = useState<"old" | "new" | null>("new");
+  const [lastRead, setLastRead] = useState<LastReadPassage | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       getSettings().then((settings) => {
         setSelectedVersion(settings.defaultBibleVersion);
       });
+      getLastReadPassage().then(setLastRead);
     }, [])
   );
 
@@ -187,6 +189,37 @@ export default function BibleScreen() {
           onSelect={setSelectedVersion}
         />
       </Animated.View>
+
+      {lastRead ? (
+        <Animated.View entering={FadeInDown.delay(150).duration(300)}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate("BibleReader", {
+                bookId: lastRead.bookId,
+                bookName: lastRead.bookName,
+                chapter: lastRead.chapter,
+                version: lastRead.version,
+              });
+            }}
+            style={[
+              styles.continueCard,
+              { backgroundColor: theme.accent },
+            ]}
+          >
+            <View style={styles.continueCardContent}>
+              <Feather name="book-open" size={20} color="#FFFFFF" />
+              <View style={styles.continueCardText}>
+                <ThemedText style={styles.continueLabel}>Continue Reading</ThemedText>
+                <ThemedText style={styles.continuePassage}>
+                  {lastRead.bookName} {lastRead.chapter} ({lastRead.version})
+                </ThemedText>
+              </View>
+            </View>
+            <Feather name="arrow-right" size={20} color="#FFFFFF" />
+          </Pressable>
+        </Animated.View>
+      ) : null}
 
       <Animated.View entering={FadeInDown.delay(200).duration(300)}>
         <Pressable
@@ -282,6 +315,32 @@ const styles = StyleSheet.create({
   versionButtonText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  continueCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.xl,
+  },
+  continueCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  continueCardText: {
+    gap: 2,
+  },
+  continueLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.8)",
+  },
+  continuePassage: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   testamentHeader: {
     flexDirection: "row",
